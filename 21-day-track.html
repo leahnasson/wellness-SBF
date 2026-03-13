@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physical Wellness: The 21 Day Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0d0d; --surface: #1a1a1a; --surface2: #222;
+  --border: rgba(255,255,255,0.08); --text: #f5f5f5; --muted: #888;
+  --red: #e63946; --red-light: #ff6b6b; --green: #2dc653; --radius: 16px;
+}
+html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+.blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.1; pointer-events: none; z-index: 0; }
+.blob-1 { width: 600px; height: 600px; background: var(--red); top: -200px; left: -200px; }
+.blob-2 { width: 400px; height: 400px; background: #c1121f; bottom: -100px; right: -100px; }
+
+/* PROGRESS */
+.progress-wrap { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 4px; background: rgba(255,255,255,0.07); }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--red-light)); transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+.step-dots { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; gap: 7px; align-items: center; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: all 0.3s; }
+.dot.done { background: var(--red); }
+.dot.active { background: white; width: 22px; border-radius: 3px; }
+
+/* SLIDES */
+.slides { position: relative; min-height: 100vh; }
+.slide { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 70px 24px 110px; position: relative; z-index: 1; }
+.slide.active { display: flex; animation: fadeUp 0.45s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+.slide-inner { width: 100%; max-width: 700px; }
+
+/* TYPE */
+.eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-bottom: 12px; }
+h1.display { font-family: 'Syne', sans-serif; font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 20px; }
+h1.display span { color: var(--red); }
+h2.section-title { font-family: 'Syne', sans-serif; font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+.lead { font-size: 1rem; line-height: 1.75; color: #ccc; margin-bottom: 20px; }
+.lead strong { color: white; }
+.divider { width: 40px; height: 3px; background: var(--red); border-radius: 999px; margin: 16px 0; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 8px; background: var(--red); color: white; border: none; border-radius: 12px; padding: 13px 26px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn:hover { background: var(--red-light); transform: translateY(-1px); }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); background: transparent; transform: none; }
+.nav-fixed { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; padding: 16px 24px; background: linear-gradient(to top, #0d0d0d 60%, transparent); display: flex; justify-content: center; gap: 12px; }
+
+/* CREW CARDS */
+.crew-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.crew-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: transform 0.2s, border-color 0.2s; position: relative; overflow: hidden; }
+.crew-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.15); }
+.crew-card.expanded { border-color: rgba(255,255,255,0.2); }
+.crew-emoji { font-size: 2rem; margin-bottom: 10px; display: block; }
+.crew-real { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.crew-name { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
+.crew-role { font-size: 0.8rem; color: #bbb; line-height: 1.5; }
+.crew-expand { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: none; }
+.crew-card.expanded .crew-expand { display: block; }
+.crew-expand p { font-size: 0.8rem; color: #bbb; line-height: 1.6; margin-bottom: 8px; }
+.crew-expand .crew-tip { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px; font-size: 0.78rem; color: #ccc; line-height: 1.6; }
+.crew-expand .crew-tip strong { color: white; }
+.crew-tap-hint { font-size: 0.72rem; color: var(--muted); text-align: center; margin-top: 10px; }
+
+/* SCIENCE CALLOUT */
+.science-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; display: flex; gap: 16px; align-items: flex-start; }
+.science-block .sb-icon { font-size: 2rem; flex-shrink: 0; margin-top: 2px; }
+.science-block .sb-body {}
+.science-block .sb-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+.science-block .sb-text { font-size: 0.875rem; color: #ccc; line-height: 1.65; }
+.science-block .sb-text strong { color: white; }
+.crew-tag { display: inline-flex; align-items: center; gap: 5px; background: rgba(230,57,70,0.12); border: 1px solid rgba(230,57,70,0.25); border-radius: 999px; padding: 2px 10px; font-size: 0.7rem; font-weight: 700; color: var(--red-light); margin-top: 8px; }
+
+/* LIKERT */
+.likert-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; }
+.likert-label { font-size: 0.92rem; font-weight: 600; margin-bottom: 12px; line-height: 1.5; }
+.likert-scale { display: flex; gap: 8px; }
+.likert-btn { flex: 1; padding: 10px 4px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+.likert-btn:hover { border-color: var(--red); color: var(--text); }
+.likert-btn.selected { background: var(--red); border-color: var(--red); color: white; }
+.likert-labels { display: flex; justify-content: space-between; margin-top: 5px; }
+.likert-labels span { font-size: 0.65rem; color: var(--muted); }
+
+/* HABIT BUILDER */
+.habit-section { margin-bottom: 22px; }
+.habit-section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.habit-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.habit-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 7px 15px; font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: var(--muted); }
+.habit-chip:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.habit-chip.selected { background: var(--red); border-color: var(--red); color: white; }
+.habit-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.92rem; outline: none; transition: border-color 0.2s; margin-top: 8px; }
+.habit-input:focus { border-color: var(--red); }
+.habit-input::placeholder { color: var(--muted); }
+.plan-preview { background: var(--surface); border: 1px solid rgba(230,57,70,0.3); border-radius: var(--radius); padding: 18px 20px; margin-top: 16px; display: none; border-left: 3px solid var(--red); }
+.plan-preview-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
+.plan-preview-text { font-size: 0.95rem; font-weight: 600; line-height: 1.6; }
+
+/* TRACKER */
+.tracker-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.tracker-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; flex: 1; min-width: 110px; }
+.tracker-stat-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--red); line-height: 1; }
+.tracker-stat-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.streak-bar { background: var(--surface2); border-radius: 999px; height: 6px; overflow: hidden; margin-top: 6px; }
+.streak-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--red-light)); border-radius: 999px; transition: width 0.5s ease; }
+.week-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; margin-top: 16px; }
+.week-label:first-child { margin-top: 0; }
+.day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 4px; }
+.day-cell { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.day-cell:hover { border-color: var(--red); }
+.day-cell .dn { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800; color: var(--muted); }
+.day-cell .dl { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.2); letter-spacing: 0.05em; }
+.day-cell.checked { background: var(--red); border-color: var(--red); }
+.day-cell.checked .dn { display: none; }
+.day-cell.checked .dl { display: none; }
+.day-cell.checked::after { content: '✓'; font-size: 1.2rem; font-weight: 800; color: white; }
+.tracker-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.tracker-habit-badge { background: rgba(230,57,70,0.12); border: 1px solid rgba(230,57,70,0.25); border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: white; }
+.tracker-habit-badge span { display: block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 3px; }
+.print-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.print-section p { font-size: 0.875rem; color: var(--muted); }
+
+/* REFLECTION */
+.reflection-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--red); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+.rc-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
+.rc-text { font-size: 0.875rem; color: #ccc; line-height: 1.65; }
+.rc-text strong { color: white; }
+
+/* MATCH */
+.match-intro { font-size: 0.9rem; color: #ccc; margin-bottom: 20px; line-height: 1.6; }
+.match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+@media(max-width:500px) { .match-grid { grid-template-columns: 1fr; } }
+.match-left { display: flex; flex-direction: column; gap: 10px; }
+.match-right { display: flex; flex-direction: column; gap: 10px; }
+.match-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-height: 52px; display: flex; align-items: center; }
+.match-item:hover { border-color: rgba(255,255,255,0.2); }
+.match-item.selected { border-color: var(--red); background: rgba(230,57,70,0.1); color: white; }
+.match-item.correct { border-color: var(--green); background: rgba(45,198,83,0.12); color: var(--green); }
+.match-item.wrong { border-color: var(--red-light); background: rgba(255,107,107,0.1); color: var(--red-light); }
+.match-item.locked { cursor: default; }
+.match-check-btn { margin-top: 4px; }
+.match-result { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 12px; font-size: 0.875rem; line-height: 1.6; color: #ccc; animation: fadeUp 0.3s ease; }
+.match-result.show { display: block; }
+.match-result strong { color: white; }
+
+/* QUIZ */
+.qpd-row { display: flex; gap: 6px; margin-bottom: 20px; }
+.qpd { flex: 1; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.1); transition: background 0.3s; }
+.qpd.done { background: var(--red); }
+.qpd.current { background: white; }
+.quiz-q { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 800; line-height: 1.4; margin-bottom: 18px; }
+.quiz-opts { display: flex; flex-direction: column; gap: 9px; }
+.quiz-opt { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; font-size: 0.9rem; font-weight: 500; color: var(--text); cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+.quiz-opt:hover:not(:disabled) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+.quiz-opt.correct { background: rgba(45,198,83,0.15); border-color: var(--green); color: var(--green); }
+.quiz-opt.wrong { background: rgba(230,57,70,0.12); border-color: var(--red); color: var(--red-light); }
+.quiz-fb { font-size: 0.84rem; line-height: 1.65; padding: 13px 15px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: #ccc; margin-top: 12px; display: none; }
+.quiz-fb.show { display: block; animation: fadeUp 0.3s ease; }
+.quiz-next-btn { margin-top: 14px; display: none; }
+.quiz-next-btn.show { display: inline-flex; }
+.score-big { font-family: 'Syne', sans-serif; font-size: 5rem; font-weight: 800; background: linear-gradient(135deg, var(--red-light), var(--red), white); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; }
+
+/* PILLAR */
+.pillar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start; }
+.pillar-icon { font-size: 1.6rem; flex-shrink: 0; }
+.pillar-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800; margin-bottom: 4px; }
+.pillar-text { font-size: 0.84rem; color: #ccc; line-height: 1.6; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+.card-grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+
+/* CONFETTI */
+.confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+.confetti-piece { position: absolute; width: 10px; height: 10px; top: -20px; opacity: 0; animation: confettiFall linear forwards; border-radius: 2px; }
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* MILESTONE TOAST */
+.milestone-toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px); z-index: 200; background: white; color: #0d0d0d; border-radius: 16px; padding: 16px 28px; font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; box-shadow: 0 20px 60px rgba(0,0,0,0.4); transition: transform 0.5s cubic-bezier(.34,1.56,.64,1); text-align: center; white-space: nowrap; }
+.milestone-toast.show { transform: translateX(-50%) translateY(0); }
+.milestone-toast .mt-sub { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 600; color: #666; margin-top: 3px; }
+
+/* MOOD MODAL */
+.mood-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 150; display: none; align-items: center; justify-content: center; padding: 20px; }
+.mood-modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.mood-modal { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 28px; width: 100%; max-width: 400px; animation: slideUp 0.3s ease; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.mood-modal h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+.mood-modal p { font-size: 0.85rem; color: #aaa; margin-bottom: 20px; line-height: 1.5; }
+.mood-options { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.mood-opt { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 10px; cursor: pointer; transition: all 0.2s; text-align: center; min-width: 64px; }
+.mood-opt:hover { border-color: var(--red); transform: translateY(-2px); }
+.mood-opt.selected { border-color: var(--red); background: rgba(230,57,70,0.15); }
+.mood-opt .mo-emoji { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+.mood-opt .mo-label { font-size: 0.68rem; font-weight: 700; color: #aaa; }
+.mood-opt.selected .mo-label { color: var(--red-light); }
+
+/* HABIT TRACKING POPUP */
+.ht-popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 150; display: none; align-items: center; justify-content: center; padding: 20px; }
+.ht-popup-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+.ht-popup { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 32px; width: 100%; max-width: 480px; animation: slideUp 0.3s ease; }
+.ht-popup .ht-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.ht-popup h3 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+.ht-popup .ht-points { margin: 16px 0; display: flex; flex-direction: column; gap: 10px; }
+.ht-popup .ht-point { display: flex; gap: 12px; align-items: flex-start; }
+.ht-popup .ht-point-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.ht-popup .ht-point-text { font-size: 0.875rem; color: #ccc; line-height: 1.6; }
+.ht-popup .ht-point-text strong { color: white; }
+
+/* BEFORE/AFTER */
+.ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+@media(max-width:480px) { .ba-grid { grid-template-columns: 1fr; } }
+.ba-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.ba-card .ba-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.ba-statement { font-size: 0.82rem; color: #ccc; margin-bottom: 8px; line-height: 1.4; }
+.ba-bars { display: flex; align-items: center; gap: 8px; }
+.ba-bar-wrap { flex: 1; background: var(--surface2); border-radius: 999px; height: 8px; overflow: hidden; }
+.ba-bar-before { height: 100%; border-radius: 999px; background: rgba(255,255,255,0.2); transition: width 0.8s ease; }
+.ba-bar-after { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--red), var(--red-light)); transition: width 0.8s ease; }
+.ba-num { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 800; min-width: 16px; }
+.ba-change { font-size: 0.75rem; font-weight: 700; margin-top: 4px; }
+.ba-change.up { color: var(--green); }
+.ba-change.down { color: var(--red-light); }
+.ba-change.same { color: var(--muted); }
+.ba-summary { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--red); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; }
+.ba-summary-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; margin-bottom: 6px; }
+.ba-summary-text { font-size: 0.875rem; color: #ccc; line-height: 1.65; }
+
+/* DAY MOOD INDICATORS */
+.day-cell .day-mood { font-size: 0.7rem; margin-top: 2px; line-height: 1; }
+
+/* FLOATING CREW */
+.floating-crew { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: 24px; }
+.float-emoji { position: absolute; font-size: 1.6rem; animation: floatUp linear infinite; opacity: 0; }
+@keyframes floatUp {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(-320px) rotate(20deg); opacity: 0; }
+}
+.login-tagline { font-family: 'Syne', sans-serif; font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 800; line-height: 1.1; margin-bottom: 6px; letter-spacing: -0.02em; }
+.login-tagline span { color: var(--red); }
+
+/* LOGIN SCREEN */
+.login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; }
+.login-screen.hidden { display: none; }
+.login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 36px 32px; width: 100%; max-width: 440px; position: relative; overflow: hidden; }
+.login-field { margin-bottom: 14px; text-align: left; }
+.login-field label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+.login-field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+.login-field input:focus { border-color: var(--red); }
+.login-field input::placeholder { color: var(--muted); }
+.login-error { font-size: 0.82rem; color: var(--red-light); margin-bottom: 12px; display: none; }
+.login-error.show { display: block; }
+.save-indicator { position: fixed; bottom: 80px; right: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px; font-size: 0.78rem; font-weight: 600; color: var(--muted); z-index: 90; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.save-indicator.show { opacity: 1; }
+
+@media print {
+  .progress-wrap, .step-dots, .nav-fixed, .print-section .btn { display: none !important; }
+  body { background: white; color: black; overflow: visible; }
+  .slide { display: flex !important; min-height: auto; page-break-after: always; background: white; }
+  .blob { display: none; }
+  .day-cell { border: 1px solid #ccc; }
+  .day-cell .dn { color: #333; }
+  .day-cell.checked { background: var(--red) !important; -webkit-print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <!-- background blobs -->
+  <div class="blob blob-1" style="opacity:0.15"></div>
+  <div class="blob blob-2" style="opacity:0.12"></div>
+
+  <div class="login-box">
+    <!-- floating crew emojis -->
+    <div class="floating-crew" id="floating-crew"></div>
+
+    <!-- header -->
+    <div style="text-align:center;margin-bottom:22px;position:relative;z-index:1">
+      <div class="eyebrow" style="justify-content:center;display:flex;margin-bottom:10px">Body HQ · Physical Wellness</div>
+      <div class="login-tagline">21 days.<br><span>Change your chemistry.</span></div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-top:10px;line-height:1.6">Move. Track. Feel the difference.<br>Your crew is ready when you are.</p>
+    </div>
+
+    <!-- form -->
+    <div style="position:relative;z-index:1">
+      <div class="login-field">
+        <label>First name</label>
+        <input type="text" id="input-name" placeholder="e.g. Jamie" maxlength="50">
+      </div>
+      <div class="login-field">
+        <label>Surname</label>
+        <input type="text" id="input-class" placeholder="e.g. Smith" maxlength="50">
+      </div>
+      <div class="login-error" id="login-error">Please enter your first name and surname to continue.</div>
+      <button class="btn" style="width:100%;justify-content:center;margin-top:4px;font-size:1rem;padding:15px" onclick="startSession()">Let's go →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE INDICATOR -->
+<div class="save-indicator" id="save-indicator">✓ Progress saved</div>
+
+<div class="progress-wrap"><div class="progress-fill" id="prog-fill"></div></div>
+<div class="step-dots" id="step-dots"></div>
+
+<!-- CONFETTI -->
+<div class="confetti-wrap" id="confetti-wrap"></div>
+<div class="milestone-toast" id="milestone-toast">
+  <div id="milestone-msg">🎉 Day 7 complete!</div>
+  <div class="mt-sub" id="milestone-sub">Keep going — you're building something real.</div>
+</div>
+
+<!-- MOOD MODAL -->
+<div class="mood-modal-overlay" id="mood-modal-overlay">
+  <div class="mood-modal">
+    <h3>How did it feel? 💭</h3>
+    <p>Rate your mood <em>after</em> today's activity. This is just for you — there's no right answer.</p>
+    <div class="mood-options">
+      <div class="mood-opt" onclick="selectMood('😴','Tired')"><span class="mo-emoji">😴</span><span class="mo-label">Tired</span></div>
+      <div class="mood-opt" onclick="selectMood('😐','Okay')"><span class="mo-emoji">😐</span><span class="mo-label">Okay</span></div>
+      <div class="mood-opt" onclick="selectMood('🙂','Good')"><span class="mo-emoji">🙂</span><span class="mo-label">Good</span></div>
+      <div class="mood-opt" onclick="selectMood('😄','Great')"><span class="mo-emoji">😄</span><span class="mo-label">Great</span></div>
+      <div class="mood-opt" onclick="selectMood('🔥','Amazing')"><span class="mo-emoji">🔥</span><span class="mo-label">Amazing</span></div>
+    </div>
+    <button class="btn" style="width:100%;justify-content:center" onclick="saveMood()">Save ✓</button>
+  </div>
+</div>
+
+<!-- HABIT TRACKING POPUP -->
+<div class="ht-popup-overlay" id="ht-popup-overlay">
+  <div class="ht-popup">
+    <div class="ht-icon">📅</div>
+    <h3>Why tracking actually works</h3>
+    <p style="font-size:0.9rem;color:#aaa;line-height:1.6;margin-bottom:0">Before you start ticking days, here's why this matters more than you might think.</p>
+    <div class="ht-points">
+      <div class="ht-point"><div class="ht-point-icon">👁️</div><div class="ht-point-text"><strong>It makes your progress visible.</strong> Your brain struggles to feel progress it can't see. A visual tracker turns invisible effort into something real — and that feeling drives you to keep going.</div></div>
+      <div class="ht-point"><div class="ht-point-icon">🔗</div><div class="ht-point-text"><strong>It creates a streak you don't want to break.</strong> Once you've got a run of days going, missing one feels like a loss. That's not weakness — it's psychology working in your favour.</div></div>
+      <div class="ht-point"><div class="ht-point-icon">🧠</div><div class="ht-point-text"><strong>The tick itself is a reward.</strong> Completing a day and marking it off triggers a small dopamine hit — <strong>Dopa the Dynamo</strong> fires every time you tick. Use it.</div></div>
+      <div class="ht-point"><div class="ht-point-icon">📊</div><div class="ht-point-text"><strong>It shows you your patterns.</strong> After 21 days, you'll be able to see which days were hardest, which were easiest, and what that tells you about your habits.</div></div>
+    </div>
+    <button class="btn" style="width:100%;justify-content:center" onclick="closeHtPopup()">Let's go! →</button>
+  </div>
+</div>
+
+<div class="slides">
+
+<!-- SLIDE 0: COVER -->
+<div class="slide active" id="slide-0">
+  <div class="slide-inner" style="text-align:center">
+    <div class="eyebrow">Physical Wellness · High School</div>
+    <h1 class="display">The <span>21 Day</span><br>Challenge</h1>
+    <div class="divider" style="margin:16px auto"></div>
+    <p class="lead" style="max-width:420px;margin:0 auto 32px">Move more. Feel better. Understand why.<br>Your body is built for this.</p>
+    <button class="btn" onclick="nextSlide()">Let's go →</button>
+  </div>
+</div>
+
+<!-- SLIDE 1: HOOK -->
+<div class="slide" id="slide-1">
+  <div class="slide-inner">
+    <div class="eyebrow">Something to think about</div>
+    <h2 class="section-title">Your body was built to move.<br>Most of us have forgotten.</h2>
+    <div class="divider"></div>
+    <p class="lead">For most of human history, we walked, ran, climbed, and carried things every single day. Our brains and bodies <strong>evolved expecting movement</strong> — it's literally built into our biology.</p>
+    <p class="lead">Here's what's wild: when you exercise, you don't just get fitter. You get <strong>smarter, happier, calmer, and better at sleeping</strong>. Not as side effects — as direct biological responses.</p>
+    <p class="lead" style="margin-bottom:0">And the good news? You don't need much. Small amounts of regular movement change your brain chemistry in ways that last. Today you're going to find out exactly how — and build a plan to make it happen.</p>
+  </div>
+</div>
+
+<!-- SLIDE 2: MEET THE EXERCISE CREW -->
+<div class="slide" id="slide-2">
+  <div class="slide-inner">
+    <div class="eyebrow">Your exercise crew</div>
+    <h2 class="section-title">Meet the five crew members<br>most affected by movement</h2>
+    <p class="lead" style="margin-bottom:20px">Tap any card to find out more about what they do and how exercise affects them.</p>
+    <div class="crew-grid" id="crew-grid"></div>
+    <p class="crew-tap-hint">Tap a card to expand it ↑</p>
+  </div>
+</div>
+
+<!-- SLIDE 3: SCIENCE -->
+<div class="slide" id="slide-3">
+  <div class="slide-inner">
+    <div class="eyebrow">The science</div>
+    <h2 class="section-title">What actually happens<br>when you move</h2>
+    <div class="divider"></div>
+
+    <div class="science-block">
+      <div class="sb-icon">🏃</div>
+      <div class="sb-body">
+        <div class="sb-title">The mood lift is real — and it's fast</div>
+        <div class="sb-text">Just <strong>20 minutes of moderate exercise</strong> triggers a measurable endorphin release. That post-workout feeling of calm and wellbeing isn't in your head — it's your body chemistry changing in real time.</div>
+        <div class="crew-tag">🏃 Finn & the Flyers at work</div>
+      </div>
+    </div>
+
+    <div class="science-block">
+      <div class="sb-icon">🎯</div>
+      <div class="sb-body">
+        <div class="sb-title">Exercise makes starting things easier</div>
+        <div class="sb-text">Regular movement <strong>boosts dopamine receptors</strong> — making you more sensitive to motivation and reward. People who exercise regularly find it easier to start tasks, stay focused, and feel a sense of accomplishment.</div>
+        <div class="crew-tag">🎯 Dopa the Dynamo benefits</div>
+      </div>
+    </div>
+
+    <div class="science-block">
+      <div class="sb-icon">⏰</div>
+      <div class="sb-body">
+        <div class="sb-title">Stress actually drops — sometimes within hours</div>
+        <div class="sb-text">Exercise is one of the most effective ways to reduce cortisol. A single session can <strong>lower stress hormone levels for up to 24 hours</strong> afterwards. It's not just relaxing — it's chemistry.</div>
+        <div class="crew-tag">⏰ Cort the Code Red calms down</div>
+      </div>
+    </div>
+
+    <div class="science-block">
+      <div class="sb-icon">☀️</div>
+      <div class="sb-body">
+        <div class="sb-title">Your baseline mood rises over time</div>
+        <div class="sb-text">Consistent exercise gradually raises your <strong>baseline serotonin levels</strong> — meaning you feel better on average, not just after workouts. This is why regular movers tend to report better mood even on rest days.</div>
+        <div class="crew-tag">☀️ Sunny the Stabiliser rises</div>
+      </div>
+    </div>
+
+    <div class="science-block">
+      <div class="sb-icon">🌙</div>
+      <div class="sb-body">
+        <div class="sb-title">You sleep better — and that changes everything</div>
+        <div class="sb-text">Regular exercise <strong>deepens sleep quality</strong> and helps regulate melatonin timing. Better sleep means better mood, better focus, and better recovery — a cycle that keeps building on itself.</div>
+        <div class="crew-tag">🌙 Mel the Midnight Messenger improves</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: LIKERT -->
+<div class="slide" id="slide-4">
+  <div class="slide-inner">
+    <div class="eyebrow">Before we build your plan</div>
+    <h2 class="section-title">How active are you<br>right now?</h2>
+    <p class="lead" style="margin-bottom:20px">No right or wrong answers — just be honest. Rate each statement 1 (Never) to 5 (Always).</p>
+    <div id="likert-wrap">
+      <div class="likert-item">
+        <div class="likert-label">I move my body in some way most days (walking, sport, dancing — anything counts)</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setLikert(0,1)">1</button><button class="likert-btn" onclick="setLikert(0,2)">2</button><button class="likert-btn" onclick="setLikert(0,3)">3</button><button class="likert-btn" onclick="setLikert(0,4)">4</button><button class="likert-btn" onclick="setLikert(0,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I feel good in my body most of the time</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setLikert(1,1)">1</button><button class="likert-btn" onclick="setLikert(1,2)">2</button><button class="likert-btn" onclick="setLikert(1,3)">3</button><button class="likert-btn" onclick="setLikert(1,4)">4</button><button class="likert-btn" onclick="setLikert(1,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I struggle to stay focused or motivated during the day</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setLikert(2,1)">1</button><button class="likert-btn" onclick="setLikert(2,2)">2</button><button class="likert-btn" onclick="setLikert(2,3)">3</button><button class="likert-btn" onclick="setLikert(2,4)">4</button><button class="likert-btn" onclick="setLikert(2,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I feel stressed or anxious more than I'd like</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setLikert(3,1)">1</button><button class="likert-btn" onclick="setLikert(3,2)">2</button><button class="likert-btn" onclick="setLikert(3,3)">3</button><button class="likert-btn" onclick="setLikert(3,4)">4</button><button class="likert-btn" onclick="setLikert(3,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I have enough energy to get through the day feeling good</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setLikert(4,1)">1</button><button class="likert-btn" onclick="setLikert(4,2)">2</button><button class="likert-btn" onclick="setLikert(4,3)">3</button><button class="likert-btn" onclick="setLikert(4,4)">4</button><button class="likert-btn" onclick="setLikert(4,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: HABIT SCIENCE -->
+<div class="slide" id="slide-5">
+  <div class="slide-inner">
+    <div class="eyebrow">Why 21 days?</div>
+    <h2 class="section-title">The science of<br>building a habit</h2>
+    <div class="divider"></div>
+    <p class="lead">A habit is something your brain does <strong>automatically</strong> — without having to think about it. Every time you repeat an action, the neural pathway for that action gets a little stronger. Like a path through a field that gets easier to walk the more people use it.</p>
+    <div class="card-grid-3">
+      <div class="card" style="text-align:center">
+        <div style="font-size:1.8rem;margin-bottom:8px">📅</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:6px">Days 1–7</div>
+        <div style="font-size:0.8rem;color:#ccc;line-height:1.5">Feels like effort. You have to remind yourself. The pathway is just getting started — this is completely normal.</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:1.8rem;margin-bottom:8px">💪</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:6px">Days 8–14</div>
+        <div style="font-size:0.8rem;color:#ccc;line-height:1.5">Starting to feel more natural. Your brain begins to expect it. Missing it starts to feel a bit off.</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:1.8rem;margin-bottom:8px">🔥</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:6px">Days 15–21</div>
+        <div style="font-size:0.8rem;color:#ccc;line-height:1.5">The pathway is strong. It's becoming automatic. This is where the habit starts to genuinely stick.</div>
+      </div>
+    </div>
+    <p class="lead" style="margin-bottom:8px"><strong>The golden rule:</strong> consistency beats intensity every time.</p>
+    <p class="lead" style="margin-bottom:0;font-size:0.9rem;color:#bbb">A 15-minute walk every day builds a stronger habit — and does more for your brain chemistry — than one massive workout per week. Start smaller than you think you need to. You can always level up.</p>
+    <div class="crew-tag" style="margin-top:12px">🎯 Dopa the Dynamo loves small, consistent wins</div>
+  </div>
+</div>
+
+<!-- SLIDE 6: MATCH PART 1 -->
+<div class="slide" id="slide-6">
+  <div class="slide-inner">
+    <div class="eyebrow">Activity — Part 1 of 2</div>
+    <h2 class="section-title">Match the crew<br>to what they do</h2>
+    <p class="match-intro">Match each crew member on the left to their correct description on the right. Tap a crew member, then tap their match.</p>
+    <div id="match1-area"></div>
+  </div>
+</div>
+
+<!-- SLIDE 7: MATCH PART 2 -->
+<div class="slide" id="slide-7">
+  <div class="slide-inner">
+    <div class="eyebrow">Activity — Part 2 of 2</div>
+    <h2 class="section-title">Four more to go...</h2>
+    <div id="match2-area"></div>
+  </div>
+</div>
+
+<!-- SLIDE 8: WELL DONE / INTRO TO 21 DAY CHALLENGE -->
+<div class="slide" id="slide-8">
+  <div class="slide-inner" style="text-align:center">
+    <div style="font-size:3.5rem;margin-bottom:16px">👏</div>
+    <div class="eyebrow" style="justify-content:center;display:flex">Nice work</div>
+    <h2 class="section-title">You know your crew.<br>Now put them to work.</h2>
+    <div class="divider" style="margin:16px auto"></div>
+    <p class="lead" style="max-width:480px;margin:0 auto 16px">You've met the science. You've matched the crew. Now it's time to do the actual thing — <strong>21 days of movement</strong>, tracked day by day.</p>
+    <div style="background:var(--surface);border:1px solid rgba(230,57,70,0.3);border-radius:var(--radius);padding:22px;max-width:480px;margin:0 auto 20px;text-align:left">
+      <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:12px">Here's how it works:</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:1.1rem">📋</span><span style="font-size:0.875rem;color:#ccc;line-height:1.5"><strong style="color:white">Build your plan</strong> — choose your movement, how often, and how long</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:1.1rem">✅</span><span style="font-size:0.875rem;color:#ccc;line-height:1.5"><strong style="color:white">Tick each day</strong> — mark it off every time you complete your activity</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:1.1rem">😊</span><span style="font-size:0.875rem;color:#ccc;line-height:1.5"><strong style="color:white">Log your mood</strong> — after each session, rate how you felt. Watch the pattern.</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:1.1rem">🎉</span><span style="font-size:0.875rem;color:#ccc;line-height:1.5"><strong style="color:white">Hit day 7, 14 and 21</strong> — your crew will be there to celebrate with you</span></div>
+      </div>
+    </div>
+    <p class="lead" style="max-width:460px;margin:0 auto 0;color:#bbb;font-size:0.9rem">But first — a quick quiz to lock in what you've learned. Don't overthink it.</p>
+  </div>
+</div>
+
+<!-- SLIDE 9: QUIZ -->
+<div class="slide" id="slide-9">
+  <div class="slide-inner">
+    <div id="quiz-area"></div>
+  </div>
+</div>
+
+<!-- SLIDE 10: BUILD YOUR PLAN -->
+<div class="slide" id="slide-10">
+  <div class="slide-inner">
+    <div class="eyebrow">Design your challenge</div>
+    <h2 class="section-title">Build your<br>21 Day Plan</h2>
+    <p class="lead" style="margin-bottom:24px">Choose something <strong>realistic</strong>, not impressive. The best plan is one you'll actually do.</p>
+
+    <div class="habit-section">
+      <div class="habit-section-title">What's your movement?</div>
+      <div class="habit-options">
+        <button class="habit-chip" onclick="pickHabit('move',this,'🚶 Daily walk')">🚶 Daily walk</button>
+        <button class="habit-chip" onclick="pickHabit('move',this,'🏃 Run or jog')">🏃 Run or jog</button>
+        <button class="habit-chip" onclick="pickHabit('move',this,'⚽ Play a sport')">⚽ Play a sport</button>
+        <button class="habit-chip" onclick="pickHabit('move',this,'🏊 Swim')">🏊 Swim</button>
+        <button class="habit-chip" onclick="pickHabit('move',this,'🚴 Cycle')">🚴 Cycle</button>
+        <button class="habit-chip" onclick="pickHabit('move',this,'💃 Dance')">💃 Dance</button>
+        <button class="habit-chip" onclick="pickHabit('move',this,'🧘 Stretch / yoga')">🧘 Stretch / yoga</button>
+        <button class="habit-chip" onclick="pickHabit('move',this,'🏋️ Bodyweight workout')">🏋️ Bodyweight workout</button>
+      </div>
+      <input class="habit-input" placeholder="Or write your own..." oninput="customMove(this.value)">
+    </div>
+
+    <div class="habit-section">
+      <div class="habit-section-title">How often?</div>
+      <div style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:1.1rem">🔒</span>
+        <div>
+          <div style="font-weight:700;font-size:0.9rem;color:white">Every day</div>
+          <div style="font-size:0.75rem;color:#aaa;margin-top:1px">This is a 21 day daily challenge — consistency is the whole point</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="habit-section">
+      <div class="habit-section-title">For how long each time?</div>
+      <div class="habit-options">
+        <button class="habit-chip" onclick="pickHabit('dur',this,'15 mins')">15 mins</button>
+        <button class="habit-chip" onclick="pickHabit('dur',this,'20 mins')">20 mins</button>
+        <button class="habit-chip" onclick="pickHabit('dur',this,'30 mins')">30 mins</button>
+        <button class="habit-chip" onclick="pickHabit('dur',this,'45+ mins')">45+ mins</button>
+      </div>
+    </div>
+
+    <div class="habit-section">
+      <div class="habit-section-title">My why</div>
+      <input class="habit-input" id="why-input" placeholder="Why does this matter to you? (e.g. more energy, less stress, get better at a sport...)" oninput="plan.why=this.value;updatePreview()">
+    </div>
+
+    <div class="plan-preview" id="plan-preview">
+      <div class="plan-preview-label">Your plan</div>
+      <div class="plan-preview-text" id="plan-preview-text"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11: TRACKER -->
+<div class="slide" id="slide-11">
+  <div class="slide-inner">
+    <div class="eyebrow">Your 21 day tracker</div>
+    <div class="tracker-header-row">
+      <h2 class="section-title" style="margin-bottom:0">21 Day<br>Challenge</h2>
+      <div class="tracker-habit-badge" id="tracker-badge">
+        <span>Your challenge</span>
+        <span id="badge-text">Set your plan first</span>
+      </div>
+    </div>
+
+    <div class="tracker-stats">
+      <div class="tracker-stat">
+        <div class="tracker-stat-num" id="stat-done">0</div>
+        <div class="tracker-stat-label">Completed</div>
+        <div class="streak-bar"><div class="streak-fill" id="streak-fill" style="width:0%"></div></div>
+      </div>
+      <div class="tracker-stat">
+        <div class="tracker-stat-num" id="stat-streak">0</div>
+        <div class="tracker-stat-label">Streak 🔥</div>
+      </div>
+      <div class="tracker-stat">
+        <div class="tracker-stat-num" id="stat-left">21</div>
+        <div class="tracker-stat-label">Remaining</div>
+      </div>
+    </div>
+
+    <div class="week-label">Week 1 — Days 1–7</div>
+    <div class="day-grid" id="week1"></div>
+    <div class="week-label">Week 2 — Days 8–14</div>
+    <div class="day-grid" id="week2"></div>
+    <div class="week-label">Week 3 — Days 15–21</div>
+    <div class="day-grid" id="week3"></div>
+
+    <div class="print-section">
+      <p>Want a physical copy to stick on your wall or hand in?</p>
+      <button class="btn" onclick="window.print()">🖨️ Print my tracker</button>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12: BEFORE/AFTER -->
+<div class="slide" id="slide-12">
+  <div class="slide-inner">
+    <div class="eyebrow">After 21 days</div>
+    <h2 class="section-title">How have you<br>changed?</h2>
+    <p class="lead" style="margin-bottom:24px">Rate the same five statements you answered at the start. Let's see what's shifted.</p>
+
+    <div id="after-likert">
+      <div class="likert-item">
+        <div class="likert-label">I move my body in some way most days</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setAfter(0,1)">1</button><button class="likert-btn" onclick="setAfter(0,2)">2</button><button class="likert-btn" onclick="setAfter(0,3)">3</button><button class="likert-btn" onclick="setAfter(0,4)">4</button><button class="likert-btn" onclick="setAfter(0,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I feel good in my body most of the time</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setAfter(1,1)">1</button><button class="likert-btn" onclick="setAfter(1,2)">2</button><button class="likert-btn" onclick="setAfter(1,3)">3</button><button class="likert-btn" onclick="setAfter(1,4)">4</button><button class="likert-btn" onclick="setAfter(1,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I struggle to stay focused or motivated during the day</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setAfter(2,1)">1</button><button class="likert-btn" onclick="setAfter(2,2)">2</button><button class="likert-btn" onclick="setAfter(2,3)">3</button><button class="likert-btn" onclick="setAfter(2,4)">4</button><button class="likert-btn" onclick="setAfter(2,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I feel stressed or anxious more than I'd like</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setAfter(3,1)">1</button><button class="likert-btn" onclick="setAfter(3,2)">2</button><button class="likert-btn" onclick="setAfter(3,3)">3</button><button class="likert-btn" onclick="setAfter(3,4)">4</button><button class="likert-btn" onclick="setAfter(3,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+      <div class="likert-item">
+        <div class="likert-label">I have enough energy to get through the day feeling good</div>
+        <div class="likert-scale">
+          <button class="likert-btn" onclick="setAfter(4,1)">1</button><button class="likert-btn" onclick="setAfter(4,2)">2</button><button class="likert-btn" onclick="setAfter(4,3)">3</button><button class="likert-btn" onclick="setAfter(4,4)">4</button><button class="likert-btn" onclick="setAfter(4,5)">5</button>
+        </div>
+        <div class="likert-labels"><span>Never</span><span>Always</span></div>
+      </div>
+    </div>
+    <button class="btn" style="margin-top:20px" onclick="showComparison()">See my comparison →</button>
+    <div id="comparison-output" style="margin-top:24px;display:none"></div>
+  </div>
+</div>
+
+<!-- SLIDE 13: CONGRATULATIONS -->
+<div class="slide" id="slide-13">
+  <div class="slide-inner" style="text-align:center">
+
+    <div style="font-size:4.5rem;margin-bottom:8px;animation:fadeUp 0.6s ease both">🏆</div>
+    <div class="eyebrow" style="justify-content:center;display:flex;margin-bottom:10px">21 Days Complete</div>
+    <h1 class="display" style="margin-bottom:8px">You <span>did it.</span></h1>
+    <div class="divider" style="margin:16px auto"></div>
+    <p class="lead" style="max-width:500px;margin:0 auto 28px">21 days of showing up. That's not nothing — that's a habit. Your brain has literally rewired itself around this movement. <strong>That's yours now, and nobody can take it away.</strong></p>
+
+    <!-- CREW CELEBRATION -->
+    <div style="margin-bottom:28px">
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:14px">Your crew is celebrating with you</div>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;max-width:520px;margin:0 auto">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 14px;min-width:88px;flex:1;max-width:100px;animation:fadeUp 0.5s ease 0.1s both">
+          <div style="font-size:2rem;margin-bottom:6px">🏃</div>
+          <div style="font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;margin-bottom:3px">Finn</div>
+          <div style="font-size:0.65rem;color:var(--muted);line-height:1.4">Fired every session</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 14px;min-width:88px;flex:1;max-width:100px;animation:fadeUp 0.5s ease 0.2s both">
+          <div style="font-size:2rem;margin-bottom:6px">🎯</div>
+          <div style="font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;margin-bottom:3px">Dopa</div>
+          <div style="font-size:0.65rem;color:var(--muted);line-height:1.4">Motivation locked in</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 14px;min-width:88px;flex:1;max-width:100px;animation:fadeUp 0.5s ease 0.3s both">
+          <div style="font-size:2rem;margin-bottom:6px">☀️</div>
+          <div style="font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;margin-bottom:3px">Sunny</div>
+          <div style="font-size:0.65rem;color:var(--muted);line-height:1.4">Baseline mood up</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 14px;min-width:88px;flex:1;max-width:100px;animation:fadeUp 0.5s ease 0.4s both">
+          <div style="font-size:2rem;margin-bottom:6px">⏰</div>
+          <div style="font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;margin-bottom:3px">Cort</div>
+          <div style="font-size:0.65rem;color:var(--muted);line-height:1.4">Stress brought down</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 14px;min-width:88px;flex:1;max-width:100px;animation:fadeUp 0.5s ease 0.5s both">
+          <div style="font-size:2rem;margin-bottom:6px">🌙</div>
+          <div style="font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;margin-bottom:3px">Mel</div>
+          <div style="font-size:0.65rem;color:var(--muted);line-height:1.4">Sleep deepened</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIPS -->
+    <div style="max-width:520px;margin:0 auto;text-align:left">
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;text-align:center">What comes next</div>
+      <div class="pillar">
+        <div class="pillar-icon">🧠</div>
+        <div>
+          <div class="pillar-title">When motivation disappears</div>
+          <div class="pillar-text">It will — that's Dopa being unreliable. Don't wait to feel like it. Start the movement, and the feeling usually follows within minutes. Action before motivation, not after.</div>
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">📅</div>
+        <div>
+          <div class="pillar-title">When you miss a day</div>
+          <div class="pillar-text">Missing one day doesn't break a habit. Missing two in a row is where habits slip. The rule: never miss twice. One day off is rest. Two days off is a choice.</div>
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">💪</div>
+        <div>
+          <div class="pillar-title">When it starts to feel easy</div>
+          <div class="pillar-text">That's the habit forming. Celebrate it — then level up. Add 5 minutes. Go further. Your body adapts, so keep giving it something to adapt to.</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid rgba(230,57,70,0.3);border-radius:var(--radius);padding:24px;margin-top:8px;text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:10px">🔥</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:8px">Your body is built for this.</div>
+        <div style="font-size:0.9rem;color:#ccc;line-height:1.7">You know the science. You've done the 21 days. You understand why it matters.<br>That's more than most adults know about their own bodies.<br><strong style="color:white">Keep going.</strong></div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn" onclick="goToSlide(11)">↩ Back to my tracker</button>
+        <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--muted)" onclick="goToSlide(12)">📊 See my before/after</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<div class="nav-fixed">
+  <button class="btn btn-ghost" id="btn-back" onclick="prevSlide()" style="display:none">← Back</button>
+  <button class="btn" id="btn-next" onclick="nextSlide()">Continue →</button>
+</div>
+
+<script>
+// ── SUPABASE SETUP ──
+const SUPABASE_URL = 'https://tvwnsiftckyoukzxxcsn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qYpuQwjoqhamY00cdp5UDQ_sg_OFF7_';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const TOTAL = 14;
+let current = 0;
+let studentName = '';
+let classCode = '';
+let recordId = null;
+let likert = [0,0,0,0,0];
+let afterLikert = [0,0,0,0,0];
+let plan = { move:'', freq:'Every day', dur:'', why:'' };
+let days = new Array(21).fill(false);
+let dayMoods = new Array(21).fill(null);
+let currentDayForMood = null;
+let htPopupShown = false;
+let quizIdx = 0, quizScore = 0, quizAnswered = false;
+let saveTimeout = null;
+
+// ── SESSION ──
+async function startSession() {
+  const name = document.getElementById('input-name').value.trim();
+  const cls = document.getElementById('input-class').value.trim();
+  if (!name || !cls) {
+    document.getElementById('login-error').classList.add('show');
+    return;
+  }
+  studentName = name;
+  classCode = cls;
+  document.getElementById('login-error').classList.remove('show');
+
+  // Check for existing record
+  const { data, error } = await sb.from('student_progress')
+    .select('*').eq('student_name', name).eq('class_code', cls).maybeSingle();
+
+  if (data) {
+    // Load existing progress
+    recordId = data.id;
+    if (data.tracker_days) days = JSON.parse(data.tracker_days);
+    if (data.day_moods) dayMoods = JSON.parse(data.day_moods);
+    if (data.likert_before) likert = JSON.parse(data.likert_before);
+    if (data.likert_after) afterLikert = JSON.parse(data.likert_after);
+    if (data.plan) plan = JSON.parse(data.plan);
+    if (data.quiz_score) quizScore = data.quiz_score;
+  } else {
+    // Create new record
+    const { data: newRow } = await sb.from('student_progress').insert({
+      student_name: name, class_code: cls,
+      tracker_days: JSON.stringify(days),
+      day_moods: JSON.stringify(dayMoods),
+      likert_before: JSON.stringify(likert),
+      likert_after: JSON.stringify(afterLikert),
+      plan: JSON.stringify(plan),
+      quiz_score: 0,
+      updated_at: new Date().toISOString()
+    }).select().single();
+    if (newRow) recordId = newRow.id;
+  }
+
+  document.getElementById('login-screen').classList.add('hidden');
+  buildCrew();
+  buildTracker();
+  updateUI();
+  restoreFormState();
+}
+
+async function saveProgress() {
+  if (!recordId) return;
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    await sb.from('student_progress').update({
+      tracker_days: JSON.stringify(days),
+      day_moods: JSON.stringify(dayMoods),
+      likert_before: JSON.stringify(likert),
+      likert_after: JSON.stringify(afterLikert),
+      plan: JSON.stringify(plan),
+      quiz_score: quizScore,
+      updated_at: new Date().toISOString()
+    }).eq('id', recordId);
+    showSaveIndicator();
+  }, 800);
+}
+
+function showSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2000);
+}
+
+function restoreFormState() {
+  // Restore likert buttons
+  likert.forEach((val, i) => {
+    if (val > 0) {
+      const items = document.querySelectorAll('#likert-wrap .likert-item');
+      if (items[i]) items[i].querySelectorAll('.likert-btn').forEach((b,j)=>b.classList.toggle('selected',j+1===val));
+    }
+  });
+  // Restore plan
+  if (plan.why) { const wi = document.getElementById('why-input'); if(wi) wi.value = plan.why; }
+  updatePreview();
+}
+
+// ── NAV ──
+function goToSlide(n) {
+  document.getElementById('slide-'+current).classList.remove('active');
+  current = n;
+  document.getElementById('slide-'+current).classList.add('active');
+  updateUI();
+  // New order: 0=cover,1=hook,2=crew,3=science,4=likert,5=habit,6=plan,
+  // 7=match1,8=match2,9=welldone,10=quiz,11=tracker,12=reflection,13=before/after,14=congrats
+  if (current===11) { buildTracker(); if (!htPopupShown) { setTimeout(()=>{ document.getElementById('ht-popup-overlay').classList.add('open'); }, 600); } }
+  if (current===6) buildMatch(match1,'match1-area',1);
+  if (current===7) buildMatch(match2,'match2-area',2);
+  if (current===9) { quizIdx=0; quizAnswered=false; renderQuiz(); }
+  if (current===13) { setTimeout(()=>launchConfetti(), 400); }
+  window.scrollTo(0,0);
+}
+function nextSlide() { if (current<TOTAL-1) goToSlide(current+1); }
+function prevSlide() { if (current>0) goToSlide(current-1); }
+
+function updateUI() {
+  const pct = (current/(TOTAL-1))*100;
+  document.getElementById('prog-fill').style.width = pct+'%';
+  document.getElementById('step-dots').innerHTML = Array.from({length:TOTAL},(_,i)=>
+    `<div class="dot ${i<current?'done':i===current?'active':''}"></div>`).join('');
+  document.getElementById('btn-back').style.display = current>0?'inline-flex':'none';
+  const nb = document.getElementById('btn-next');
+  nb.style.display = (current===0||current===9||current===13)?'none':'inline-flex';
+}
+
+// ── CREW CARDS ──
+function buildCrew() {
+  document.getElementById('crew-grid').innerHTML = crew.map((c,i)=>`
+    <div class="crew-card" id="crew-${i}" onclick="toggleCrew(${i})">
+      <span class="crew-emoji">${c.emoji}</span>
+      <div class="crew-real" style="color:${c.color}">${c.real}</div>
+      <div class="crew-name">${c.name}</div>
+      <div class="crew-role">${c.role}</div>
+      <div class="crew-expand">
+        <p>${c.detail}</p>
+        <div class="crew-tip">${c.tip}</div>
+      </div>
+    </div>`).join('');
+}
+function toggleCrew(i) { document.getElementById('crew-'+i).classList.toggle('expanded'); }
+
+// ── LIKERT ──
+function setLikert(q, val) {
+  likert[q] = val;
+  const items = document.querySelectorAll('#likert-wrap .likert-item');
+  items[q].querySelectorAll('.likert-btn').forEach((b,i)=>b.classList.toggle('selected',i+1===val));
+  saveProgress();
+}
+
+// ── HABIT BUILDER ──
+function pickHabit(type, el, val) {
+  el.closest('.habit-options').querySelectorAll('.habit-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  plan[type] = val;
+  updatePreview();
+  saveProgress();
+}
+function customMove(val) {
+  if(val){ plan.move=val; document.querySelectorAll('.habit-options')[0].querySelectorAll('.habit-chip').forEach(c=>c.classList.remove('selected')); updatePreview(); saveProgress(); }
+}
+function updatePreview() {
+  const p = document.getElementById('plan-preview');
+  const t = document.getElementById('plan-preview-text');
+  if (p && t && plan.move && plan.dur) {
+    p.style.display='block';
+    t.innerHTML = `${plan.move} · Every day · ${plan.dur}${plan.why?'<br><span style="font-size:0.82rem;color:#aaa;font-weight:400">Why: '+plan.why+'</span>':''}`;
+    const badge = document.getElementById('badge-text');
+    if (badge) badge.textContent = `${plan.move} · Every day`;
+  }
+}
+
+// ── TRACKER ──
+function buildTracker() {
+  ['week1','week2','week3'].forEach((id,wi)=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    const start=wi*7;
+    el.innerHTML = Array.from({length:7},(_,i)=>{
+      const d=start+i;
+      const mood = dayMoods[d] ? `<div class="day-mood">${dayMoods[d].emoji}</div>` : '';
+      return `<div class="day-cell ${days[d]?'checked':''}" onclick="toggleDay(${d})" id="day-${d}">
+        <span class="dn">${d+1}</span><span class="dl">DAY</span>${mood}</div>`;
+    }).join('');
+  });
+  updateTrackerStats();
+}
+
+function toggleDay(i) {
+  days[i] = !days[i];
+  document.getElementById('day-'+i).classList.toggle('checked', days[i]);
+  if (days[i]) {
+    currentDayForMood = i;
+    setTimeout(()=>{ document.getElementById('mood-modal-overlay').classList.add('open'); }, 300);
+    checkMilestone();
+  } else {
+    dayMoods[i] = null;
+    updateDayCell(i);
+  }
+  updateTrackerStats();
+  saveProgress();
+}
+
+function checkMilestone() {
+  const done = days.filter(Boolean).length;
+  const milestones = {
+    7:  ['🔥 Week 1 Done!',     'You\'ve built the foundation. Keep going.'],
+    14: ['⚡ Two Weeks Strong!', 'The habit is forming. Don\'t stop now.'],
+    21: ['🏆 21 Days Complete!', 'You did it. Head to your results! →']
+  };
+  if (milestones[done]) {
+    const [msg, sub] = milestones[done];
+    document.getElementById('milestone-msg').textContent = msg;
+    document.getElementById('milestone-sub').textContent = sub;
+    const toast = document.getElementById('milestone-toast');
+    toast.classList.add('show');
+    if (done === 21) {
+      toast.style.cursor = 'pointer';
+      toast.onclick = () => goToSlide(13);
+      setTimeout(()=>goToSlide(13), 3000);
+    } else {
+      setTimeout(()=>toast.classList.remove('show'), 4000);
+    }
+    launchConfetti();
+  }
+}
+
+function launchConfetti() {
+  const wrap = document.getElementById('confetti-wrap');
+  wrap.innerHTML = '';
+  const colors = ['#e63946','#ff6b6b','#ffffff','#f4c430','#2dc653','#4cc9f0','#ff9f1c'];
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*0.5}s;border-radius:${Math.random()>0.5?'50%':'2px'}`;
+    wrap.appendChild(el);
+  }
+  setTimeout(()=>wrap.innerHTML='', 4000);
+}
+
+function updateTrackerStats() {
+  const done=days.filter(Boolean).length;
+  const dEl = document.getElementById('stat-done'); if(dEl) dEl.textContent=done;
+  const lEl = document.getElementById('stat-left'); if(lEl) lEl.textContent=21-done;
+  const sEl = document.getElementById('streak-fill'); if(sEl) sEl.style.width=(done/21*100)+'%';
+  let streak=0;
+  for(let i=days.length-1;i>=0;i--){ if(days[i])streak++; else break; }
+  const stEl = document.getElementById('stat-streak'); if(stEl) stEl.textContent=streak;
+}
+
+function selectMood(emoji, label) {
+  document.querySelectorAll('.mood-opt').forEach(o=>o.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  if (currentDayForMood !== null) dayMoods[currentDayForMood] = { emoji, label };
+}
+
+function saveMood() {
+  document.getElementById('mood-modal-overlay').classList.remove('open');
+  document.querySelectorAll('.mood-opt').forEach(o=>o.classList.remove('selected'));
+  if (currentDayForMood !== null) updateDayCell(currentDayForMood);
+  currentDayForMood = null;
+  saveProgress();
+}
+
+function updateDayCell(i) {
+  const cell = document.getElementById('day-'+i);
+  if (!cell) return;
+  if (days[i] && dayMoods[i]) {
+    let moodEl = cell.querySelector('.day-mood');
+    if (!moodEl) { moodEl = document.createElement('div'); moodEl.className='day-mood'; cell.appendChild(moodEl); }
+    moodEl.textContent = dayMoods[i].emoji;
+  }
+}
+
+function closeHtPopup() {
+  document.getElementById('ht-popup-overlay').classList.remove('open');
+  htPopupShown = true;
+}
+
+// ── REFLECTION ──
+function buildReflection() {
+  const out = document.getElementById('reflection-output');
+  const cards = [];
+  if (likert[0]<=2) cards.push({label:'Movement baseline',text:'You said you don\'t move much right now — which means your 21 Day Challenge is going to have a <strong>bigger impact</strong> than for someone who already exercises. Even small increases create noticeable changes when you\'re starting from a low base. Finn & the Flyers are ready and waiting.'});
+  if (likert[1]<=2) cards.push({label:'Body confidence',text:'Feeling good in your body is closely linked to movement — not because of how you look, but because of how exercise changes your brain chemistry. <strong>Sunny the Stabiliser</strong> rises gradually with regular movement, improving how you feel about yourself from the inside out.'});
+  if (likert[2]>=3) cards.push({label:'Focus & motivation',text:'Struggling with focus is often a sign that <strong>Dopa the Dynamo</strong> is running low. Exercise is one of the most effective ways to boost dopamine naturally — the effect on concentration can kick in within a single session, and builds with consistency.'});
+  if (likert[3]>=3) cards.push({label:'Stress & anxiety',text:'Feeling stressed more than you\'d like? That\'s <strong>Cort the Code Red</strong> running high. A single workout can drop cortisol for up to 24 hours. Regular movement is one of the most evidence-backed stress-reduction tools your body has.'});
+  if (likert[4]<=2) cards.push({label:'Energy levels',text:'Low energy is often fixed by <strong>more movement</strong>, not more rest. Exercise improves how your cells produce energy and regulates sleep quality via Mel the Midnight Messenger — both translate directly into feeling more energised day-to-day.'});
+  if (cards.length===0) cards.push({label:'Looking good!',text:'Based on your check-in, you\'re already in a pretty solid place. Your 21 Day Challenge is about <strong>building on what\'s working</strong> — locking in a habit and getting even more of the benefits you\'re already experiencing.'});
+  out.innerHTML = cards.map(c=>`<div class="reflection-card"><div class="rc-label">${c.label}</div><div class="rc-text">${c.text}</div></div>`).join('');
+}
+
+// ── MATCH ──
+let matchLeftSel = {1:null, 2:null};
+let matchRightSel = {1:null, 2:null};
+let matchPairs = {1:{}, 2:{}};
+
+function buildMatch(data, containerId, part) {
+  matchLeftSel[part] = null; matchRightSel[part] = null; matchPairs[part] = {};
+  const shuffledRight = [...data].sort(()=>Math.random()-0.5);
+  const container = document.getElementById(containerId);
+  container.innerHTML = `
+    <div class="match-grid">
+      <div class="match-left" id="match-left-${part}">
+        ${data.map((item,i)=>`<div class="match-item" id="ml-${part}-${i}" onclick="selectLeft(${part},${i},'${item.left.replace(/'/g,"\\'")}',this)">${item.left}</div>`).join('')}
+      </div>
+      <div class="match-right" id="match-right-${part}">
+        ${shuffledRight.map((item,i)=>`<div class="match-item" id="mr-${part}-${i}" onclick="selectRight(${part},${i},'${item.right.replace(/'/g,"\\'")}','${item.left.replace(/'/g,"\\'")}',this)">${item.right}</div>`).join('')}
+      </div>
+    </div>
+    <button class="btn match-check-btn" onclick="checkMatch(${part}, ${JSON.stringify(data).replace(/"/g,'&quot;')})">Check my answers ✓</button>
+    <div class="match-result" id="match-result-${part}"></div>`;
+}
+
+function selectLeft(part, i, val, el) {
+  document.querySelectorAll(`#match-left-${part} .match-item`).forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); matchLeftSel[part] = {i, val}; tryPair(part);
+}
+function selectRight(part, i, val, correctLeft, el) {
+  document.querySelectorAll(`#match-right-${part} .match-item`).forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); matchRightSel[part] = {i, val, correctLeft}; tryPair(part);
+}
+function tryPair(part) {
+  if (matchLeftSel[part] && matchRightSel[part]) {
+    matchPairs[part][matchLeftSel[part].i] = matchRightSel[part].i;
+    matchLeftSel[part] = null; matchRightSel[part] = null;
+    document.querySelectorAll(`#match-left-${part} .match-item, #match-right-${part} .match-item`).forEach(e=>e.classList.remove('selected'));
+  }
+}
+function checkMatch(part, data) {
+  const shuffledRight = Array.from(document.querySelectorAll(`#match-right-${part} .match-item`)).map(e=>e.textContent.trim());
+  let correct = 0;
+  data.forEach((item, li) => {
+    const lEl = document.getElementById(`ml-${part}-${li}`);
+    const pairedRi = matchPairs[part][li];
+    if (pairedRi !== undefined) {
+      const isCorrect = shuffledRight[pairedRi] === item.right;
+      lEl.classList.add(isCorrect ? 'correct' : 'wrong'); lEl.classList.add('locked');
+      if (isCorrect) correct++;
+    }
+  });
+  const res = document.getElementById(`match-result-${part}`);
+  res.innerHTML = correct===data.length ? `<strong>✓ Perfect!</strong> All ${data.length} matched correctly. You know your crew.` : `You got <strong>${correct} out of ${data.length}</strong>. Head back to the crew cards if needed — tap Continue when ready.`;
+  res.classList.add('show');
+}
+
+// ── AFTER LIKERT ──
+function setAfter(q, val) {
+  afterLikert[q] = val;
+  const items = document.querySelectorAll('#after-likert .likert-item');
+  items[q].querySelectorAll('.likert-btn').forEach((b,i)=>b.classList.toggle('selected',i+1===val));
+  saveProgress();
+}
+
+function showComparison() {
+  const labels = ['I move my body most days','I feel good in my body','I struggle to focus','I feel stressed','I have enough energy'];
+  const isPositive = [true, true, false, false, true];
+  const out = document.getElementById('comparison-output');
+  let improved = 0;
+  const rows = labels.map((label, i) => {
+    const before = likert[i] || 3;
+    const after = afterLikert[i] || before;
+    const diff = after - before;
+    const better = isPositive[i] ? diff > 0 : diff < 0;
+    const worse = isPositive[i] ? diff < 0 : diff > 0;
+    if (better) improved++;
+    const changeLabel = diff===0?'No change':better?`+${Math.abs(diff)} improved`:`-${Math.abs(diff)} declined`;
+    const changeClass = diff===0?'same':better?'up':'down';
+    return `<div style="margin-bottom:14px">
+      <div style="font-size:0.82rem;font-weight:600;margin-bottom:6px;color:#ccc">${label}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
+        <div style="font-size:0.7rem;color:var(--muted);width:40px">Before</div>
+        <div class="ba-bar-wrap"><div class="ba-bar-before" style="width:${before/5*100}%"></div></div>
+        <div class="ba-num" style="color:#888">${before}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:0.7rem;color:var(--red-light);width:40px">After</div>
+        <div class="ba-bar-wrap"><div class="ba-bar-after" style="width:${after/5*100}%"></div></div>
+        <div class="ba-num" style="color:var(--red-light)">${after}</div>
+      </div>
+      <div class="ba-change ${changeClass}">${changeLabel}</div>
+    </div>`;
+  }).join('');
+  const summaryText = improved>=3
+    ? `You improved in <strong>${improved} out of 5 areas</strong>. That's a real, measurable shift — and it happened because you showed up for 21 days.`
+    : improved>=1
+    ? `You improved in <strong>${improved} area${improved>1?'s':''}.</strong> Even small shifts in the right direction are meaningful.`
+    : `The numbers might not show big shifts yet — and that's okay. The fact that you completed 21 days is the real result here.`;
+  out.innerHTML = `<div class="ba-summary"><div class="ba-summary-title">Your results</div><div class="ba-summary-text">${summaryText}</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">${rows}</div>`;
+  out.style.display='block';
+  out.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  saveProgress();
+}
+
+// ── QUIZ ──
+function renderQuiz() {
+  const el = document.getElementById('quiz-area');
+  const nb = document.getElementById('btn-next');
+  if (quizIdx >= quizData.length) {
+    const pct = Math.round((quizScore/quizData.length)*100);
+    const msg = pct===100?'Perfect — you know your crew and the science cold.':pct>=75?'Really solid. You\'ve got a strong handle on why movement matters.':pct>=50?'Good start — review the science screens for the ones you missed.':'Head back through the lesson — it\'ll click faster second time.';
+    el.innerHTML = `<div style="text-align:center;padding:20px 0">
+      <div class="eyebrow" style="display:flex;justify-content:center;margin-bottom:12px">Quiz complete</div>
+      <div style="font-family:'Syne',sans-serif;font-size:5rem;font-weight:800;background:linear-gradient(135deg,#ff6b6b,#e63946,white);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">${quizScore}/${quizData.length}</div>
+      <div style="color:var(--muted);margin:8px 0 16px">${pct}% correct</div>
+      <div style="font-size:0.92rem;color:#ccc;max-width:360px;margin:0 auto 28px;line-height:1.6">${msg}</div>
+      <button class="btn" onclick="nextSlide()">Finish →</button>
+    </div>`;
+    nb.style.display='none';
+    saveProgress();
+    return;
+  }
+  const q = quizData[quizIdx];
+  el.innerHTML = `
+    <div class="eyebrow">Knowledge check — Question ${quizIdx+1} of ${quizData.length}</div>
+    <h2 class="section-title" style="font-size:1.3rem;margin-bottom:16px">Test yourself</h2>
+    <div class="qpd-row">${quizData.map((_,i)=>`<div class="qpd ${i<quizIdx?'done':i===quizIdx?'current':''}"></div>`).join('')}</div>
+    <div class="card">
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-opts">${q.opts.map((o,i)=>`<button class="quiz-opt" onclick="answerQ(${i})">${o}</button>`).join('')}</div>
+      <div class="quiz-fb" id="qfb">${q.fb}</div>
+      <button class="btn quiz-next-btn" id="qnext" onclick="nextQ()">${quizIdx<quizData.length-1?'Next →':'See my score →'}</button>
+    </div>`;
+  nb.style.display='none';
+}
+function answerQ(sel) {
+  if(quizAnswered) return; quizAnswered=true;
+  const q=quizData[quizIdx];
+  document.querySelectorAll('.quiz-opt').forEach((b,i)=>{ b.disabled=true; if(i===q.a)b.classList.add('correct'); else if(i===sel)b.classList.add('wrong'); });
+  if(sel===q.a) quizScore++;
+  document.getElementById('qfb').classList.add('show');
+  document.getElementById('qnext').classList.add('show');
+}
+function nextQ() { quizIdx++; quizAnswered=false; renderQuiz(); }
+
+// Allow Enter key on login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
+    startSession();
+  }
+});
+
+const crew = [
+  { emoji:'🏃', real:'Endorphins', name:'Finn & the Flyers', color:'#00c9a7',
+    role:'Your body\'s natural painkiller and mood booster — released during exercise.',
+    detail:'Finn and the crew are the reason exercise feels good. They bind to the same receptors as opioid painkillers, reducing pain and creating euphoria. The famous "runner\'s high" is Finn in full flow. Even laughter triggers a small release.',
+    tip:'<strong>Exercise tip:</strong> You need around 20 minutes of moderate effort to get a real endorphin release — enough to make conversation slightly difficult. You don\'t need to go hard, just consistent.' },
+  { emoji:'🎯', real:'Dopamine', name:'Dopa the Dynamo', color:'#f77f00',
+    role:'Your motivation engine — loves small wins, consistent progress, and the satisfaction of completing things.',
+    detail:'Dopa fires in anticipation of reward and during progress toward goals. Exercise is one of the most reliable natural dopamine triggers — it fires during and after, which is why regular movers find it easier to stay motivated in other areas of life too.',
+    tip:'<strong>Exercise tip:</strong> Break your challenge into small wins. Check off each day. That tick is a real dopamine hit — use it.' },
+  { emoji:'⏰', real:'Cortisol', name:'Cort the Code Red', color:'#ff6b35',
+    role:'Your stress hormone — exercise is one of the fastest ways to bring him down.',
+    detail:'Cort runs high when you\'re stressed, sleep-deprived, or overwhelmed. The good news: a single exercise session can reduce cortisol levels for up to 24 hours. This is why people who exercise regularly tend to handle stress better — it\'s not a mindset, it\'s chemistry.',
+    tip:'<strong>Exercise tip:</strong> If you\'re feeling anxious or overwhelmed, even a 10-minute walk measurably reduces cortisol. Movement is one of the fastest stress-relief tools you have.' },
+  { emoji:'☀️', real:'Serotonin', name:'Sunny the Stabiliser', color:'#f4c430',
+    role:'Your baseline mood regulator — regular exercise gradually raises her over time.',
+    detail:'Unlike endorphins which spike and fade, serotonin builds steadily with regular movement. People who exercise consistently report better average mood — not just after workouts, but in general. Exercise is one of the most evidence-backed non-medication ways to raise serotonin.',
+    tip:'<strong>Exercise tip:</strong> Outdoor exercise boosts serotonin even more — sunlight and movement together are a powerful combination for baseline mood.' },
+  { emoji:'🌙', real:'Melatonin', name:'Mel the Midnight Messenger', color:'#4cc9f0',
+    role:'Your sleep signal — regular exercise deepens sleep quality and helps Mel do her job.',
+    detail:'Exercise helps regulate your body clock, making melatonin timing more consistent. People who exercise regularly fall asleep faster and spend more time in deep sleep. Better sleep means better mood, focus, and recovery — a positive cycle that keeps building.',
+    tip:'<strong>Exercise tip:</strong> Avoid intense exercise within 2 hours of bedtime — it can delay melatonin and keep you alert. Morning or afternoon exercise is best for sleep.' }
+];
+
+const match1 = [
+  { left:'🏃 Finn & the Flyers', right:'Your body\'s natural painkiller — the runner\'s high' },
+  { left:'🎯 Dopa the Dynamo', right:'The motivation chemical — loves a small win' },
+  { left:'⏰ Cort the Code Red', right:'The stress hormone exercise brings down' },
+  { left:'☀️ Sunny the Stabiliser', right:'Baseline mood — builds steadily with regular movement' }
+];
+const match2 = [
+  { left:'🌙 Mel the Midnight Messenger', right:'Your sleep signal — exercise deepens her work' },
+  { left:'🏃 Finn & the Flyers', right:'Released after 20 mins of moderate exercise' },
+  { left:'🎯 Dopa the Dynamo', right:'Fires during progress and completing goals' },
+  { left:'⏰ Cort the Code Red', right:'Drops for up to 24 hours after a workout' }
+];
+
+const quizData = [
+  { q:'How long does research suggest you need to exercise to get a meaningful endorphin release?', opts:['5 minutes','20 minutes','1 hour','45 minutes'], a:1, fb:'Just 20 minutes of moderate effort is enough to trigger Finn & the Flyers. You don\'t need to destroy yourself — just get moving consistently.' },
+  { q:'What happens to cortisol (Cort the Code Red) after exercise?', opts:['It spikes for hours','It stays the same','It drops for up to 24 hours','It only drops if you run'], a:2, fb:'A single exercise session can lower cortisol levels for up to 24 hours. That\'s why even one workout can make a stressful day feel more manageable.' },
+  { q:'Which crew member builds steadily with regular exercise rather than spiking and fading?', opts:['Finn & the Flyers','Dopa the Dynamo','Sunny the Stabiliser','Addie the Alarm'], a:2, fb:'Serotonin (Sunny the Stabiliser) builds gradually over time with consistent movement. This is why regular movers report better average mood — not just on workout days.' },
+  { q:'Why does consistency beat intensity for habit building?', opts:['Intense workouts are dangerous','Short sessions build stronger neural pathways over time','Intensity doesn\'t help fitness','Consistency is easier to track'], a:1, fb:'Every repetition of a behaviour strengthens the neural pathway for it. Daily short sessions build that pathway faster than occasional big efforts — and are much easier to stick to.' },
+  { q:'What effect does regular exercise have on sleep?', opts:['It makes no difference','It makes you sleep less','It deepens sleep quality and helps regulate melatonin','It only helps if you exercise in the morning'], a:2, fb:'Regular exercise helps regulate your body clock and deepens sleep quality. Better sleep means better mood, focus and recovery — Mel the Midnight Messenger benefits directly.' },
+  { q:'During which stage of the 21 days does a habit start to become automatic?', opts:['Days 1–7','Days 8–14','Days 15–21','Only after 30 days'], a:2, fb:'Days 15–21 is when the neural pathway is strong enough that the behaviour starts to feel automatic — the defining feature of a true habit.' },
+  { q:'Which crew member is most associated with the feeling of motivation to start and complete things?', opts:['Sunny the Stabiliser','Mel the Midnight Messenger','Cort the Code Red','Dopa the Dynamo'], a:3, fb:'Dopamine (Dopa the Dynamo) is your motivation and reward chemical. Regular exercise boosts dopamine receptors, making it easier to feel motivated — even in other areas of life.' },
+  { q:'What should you do if you miss a day of your 21 Day Challenge?', opts:['Start the whole 21 days over','Give up — the habit is broken','Never miss two days in a row','Do double the next day'], a:2, fb:'Missing one day is fine — missing two in a row is where habits slip. The rule is: never miss twice. One day off is rest. Two days off is a choice.' }
+];
+
+// ── FLOATING CREW ON LOGIN ──
+function startFloatingCrew() {
+  const wrap = document.getElementById('floating-crew');
+  if (!wrap) return;
+  const emojis = ['🏃','🎯','☀️','⏰','🌙','💪','🔥','⚡'];
+  const positions = [8,18,28,38,50,62,72,82];
+  positions.forEach((left, i) => {
+    const el = document.createElement('div');
+    el.className = 'float-emoji';
+    el.textContent = emojis[i % emojis.length];
+    const duration = 4 + Math.random() * 4;
+    const delay = Math.random() * 4;
+    el.style.cssText = `left:${left}%;bottom:-20px;animation-duration:${duration}s;animation-delay:${delay}s;font-size:${1.2+Math.random()*0.8}rem`;
+    wrap.appendChild(el);
+  });
+}
+startFloatingCrew();
+
+// ── INIT ──
+// App starts via startSession() after login
+</script>
+</body>
+</html>
