@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Body HQ: Meet Your Crew</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --border: rgba(255,255,255,0.08);
+    --text: #f5f5f5;
+    --muted: #888;
+    --accent: #e63946;
+    --radius: 18px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background blobs */
+  .bg-blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-blob-1 { width: 500px; height: 500px; background: #e63946; top: -150px; left: -150px; }
+  .bg-blob-2 { width: 400px; height: 400px; background: #c1121f; bottom: -100px; right: -100px; }
+  .bg-blob-3 { width: 300px; height: 300px; background: #ff6b6b; top: 40%; left: 40%; }
+
+  .app-wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 36px 20px 60px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .header-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .header h1 span {
+    background: linear-gradient(135deg, #ff6b6b 0%, #e63946 40%, #c1121f 70%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+  .tab-btn.active {
+    background: #e63946;
+    color: #fff;
+    border-color: #e63946;
+  }
+
+  /* FILTER PILLS */
+  .filters {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .filter-pill {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-pill:hover { color: var(--text); }
+  .filter-pill.active { color: var(--text); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+
+  /* CARDS GRID */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .char-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 18px;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    animation: fadeUp 0.5s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+  .char-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border-radius: var(--radius);
+  }
+  .char-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.4); }
+  .char-card:hover::before { opacity: 1; }
+  .char-card:hover { border-color: rgba(255,255,255,0.15); }
+
+  .card-emoji {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .card-real-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    opacity: 0.6;
+  }
+  .card-char-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .card-tagline {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .card-category-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .card-category-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 540px;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 32px;
+    position: relative;
+    animation: slideUp 0.3s ease;
+  }
+  .modal::-webkit-scrollbar { width: 4px; }
+  .modal::-webkit-scrollbar-track { background: transparent; }
+  .modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: rgba(255,255,255,0.07);
+    border: none;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    color: var(--muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.14); color: var(--text); }
+
+  .modal-emoji { font-size: 3rem; margin-bottom: 8px; }
+  .modal-real-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 6px;
+  }
+  .modal-char-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.15;
+  }
+  .modal-tagline {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .modal-section { margin-bottom: 20px; }
+  .modal-section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+  .modal-section p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #c8c8e0;
+  }
+
+  .modal-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .modal-stat {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .modal-tip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #c8c8e0;
+    margin-bottom: 24px;
+  }
+  .modal-tip strong { color: var(--text); }
+
+  .modal-nav {
+    display: flex;
+    gap: 10px;
+  }
+  .modal-nav-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .modal-nav-btn:hover { background: rgba(255,255,255,0.1); }
+
+  /* QUIZ */
+  .quiz-wrapper { animation: fadeUp 0.4s ease both; }
+  .quiz-progress {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+  .quiz-progress-dot {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.3s;
+  }
+  .quiz-progress-dot.done { background: #e63946; }
+  .quiz-progress-dot.current { background: #ff6b6b; }
+
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 16px;
+  }
+  .quiz-number {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .quiz-question {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  .quiz-char {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-option {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+  }
+  .quiz-option:hover:not(:disabled) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+  .quiz-option.correct { background: rgba(0,201,167,0.15); border-color: #00c9a7; color: #00c9a7; }
+  .quiz-option.wrong { background: rgba(255,62,108,0.12); border-color: #ff3e6c; color: #ff3e6c; }
+  .quiz-option:disabled { cursor: default; }
+
+  .quiz-feedback {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-top: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: #c8c8e0;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; animation: fadeUp 0.3s ease; }
+
+  .quiz-next-btn {
+    background: #e63946;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 16px;
+    display: none;
+    transition: opacity 0.2s;
+  }
+  .quiz-next-btn.show { display: inline-block; }
+  .quiz-next-btn:hover { opacity: 0.85; }
+
+  /* SCORE */
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 48px 32px;
+    text-align: center;
+    animation: fadeUp 0.4s ease both;
+  }
+  .score-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, #ff6b6b, #e63946, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .score-label { font-size: 1rem; color: var(--muted); margin-bottom: 24px; }
+  .score-message { font-size: 1rem; color: #c8c8e0; max-width: 320px; margin: 0 auto 28px; line-height: 1.6; }
+  .retry-btn {
+    background: #e63946;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .retry-btn:hover { opacity: 0.85; }
+
+  /* MOOD CHECKER */
+  .mood-wrapper { animation: fadeUp 0.4s ease both; }
+  .mood-intro {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .mood-intro h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .mood-intro p { color: var(--muted); font-size: 0.9rem; max-width: 380px; margin: 0 auto; }
+
+  .mood-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .mood-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .mood-btn:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+  .mood-btn.selected { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.06); }
+  .mood-btn-emoji { font-size: 2rem; margin-bottom: 8px; display: block; }
+  .mood-btn-label { font-size: 0.85rem; font-weight: 600; color: var(--text); display: block; }
+
+  .mood-result {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    animation: fadeUp 0.35s ease;
+  }
+  .mood-result.show { display: block; }
+  .mood-result-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+  .mood-crew {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .mood-crew-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .mood-explanation {
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #c8c8e0;
+    margin-bottom: 16px;
+  }
+  .mood-tip-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: #c8c8e0;
+  }
+  .mood-tip-box strong { color: white; }
+  .mood-reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 20px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.2s;
+  }
+  .mood-reset-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Stagger cards */
+  .char-card:nth-child(1) { animation-delay: 0.05s }
+  .char-card:nth-child(2) { animation-delay: 0.1s }
+  .char-card:nth-child(3) { animation-delay: 0.15s }
+  .char-card:nth-child(4) { animation-delay: 0.2s }
+  .char-card:nth-child(5) { animation-delay: 0.25s }
+  .char-card:nth-child(6) { animation-delay: 0.3s }
+  .char-card:nth-child(7) { animation-delay: 0.35s }
+  .char-card:nth-child(8) { animation-delay: 0.4s }
+
+  .hidden { display: none !important; }
+  /* LOGIN */
+  .login-screen { position: fixed; inset: 0; background: #0d0d0d; z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; }
+  .login-screen.hidden { display: none; }
+  .login-box { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 36px 32px; width: 100%; max-width: 440px; position: relative; overflow: hidden; }
+  .login-tagline { font-family: 'Syne', sans-serif; font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 800; line-height: 1.1; margin-bottom: 6px; letter-spacing: -0.02em; }
+  .login-tagline span { color: #e63946; }
+  .login-sub { font-size: 0.85rem; color: #888; margin-top: 8px; margin-bottom: 24px; line-height: 1.6; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888; display: block; margin-bottom: 6px; }
+  .login-field input { width: 100%; background: #222; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 13px 16px; color: #f5f5f5; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+  .login-field input:focus { border-color: #e63946; }
+  .login-field input::placeholder { color: #888; }
+  .login-error { font-size: 0.82rem; color: #ff6b6b; margin-bottom: 12px; display: none; }
+  .login-error.show { display: block; }
+  .login-btn { width: 100%; background: #e63946; color: white; border: none; border-radius: 12px; padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
+  .login-btn:hover { background: #ff6b6b; transform: translateY(-1px); }
+  .float-emoji { position: absolute; font-size: 1.5rem; animation: floatUp linear infinite; opacity: 0; pointer-events: none; }
+  @keyframes floatUp { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 0.5; } 100% { transform: translateY(-350px) rotate(20deg); opacity: 0; } }
+  /* SAVE INDICATOR */
+  .save-indicator { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 8px 16px; font-size: 0.78rem; font-weight: 600; color: #888; z-index: 90; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .save-indicator.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <div style="position:fixed;inset:0;background:#0d0d0d;z-index:-1"></div>
+  <div style="position:fixed;width:500px;height:500px;background:#e63946;border-radius:50%;filter:blur(90px);opacity:0.12;top:-200px;left:-200px;pointer-events:none"></div>
+  <div class="login-box">
+    <div id="login-floats"></div>
+    <div style="position:relative;z-index:1">
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#e63946;margin-bottom:10px">Body HQ</div>
+      <div class="login-tagline">Meet your<br><span>crew.</span></div>
+      <p class="login-sub">The chemicals and brain structures running the show inside you — and what to do about them.</p>
+      <div class="login-field">
+        <label>First name</label>
+        <input type="text" id="input-name" placeholder="e.g. Jamie" maxlength="50">
+      </div>
+      <div class="login-field">
+        <label>Surname</label>
+        <input type="text" id="input-surname" placeholder="e.g. Smith" maxlength="50">
+      </div>
+      <div class="login-error" id="login-error">Please enter your first name and surname.</div>
+      <button class="login-btn" onclick="startSession()">Let's go →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE INDICATOR -->
+<div class="save-indicator" id="save-indicator">✓ Progress saved</div>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+<div class="bg-blob bg-blob-3"></div>
+
+<div class="app-wrapper">
+
+  <header class="header">
+    <div class="header-badge">Body HQ</div>
+    <h1><span>Meet Your Crew</span></h1>
+    <p>The chemicals and brain structures running the show inside you — every single day.</p>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('cards')">🃏 The Crew</button>
+    <button class="tab-btn" onclick="switchTab('mood')">💭 How Am I Feeling?</button>
+    <button class="tab-btn" onclick="switchTab('quiz')">🎓 Quiz</button>
+  </div>
+
+  <!-- CARDS TAB -->
+  <div id="tab-cards">
+    <div class="filters">
+      <button class="filter-pill active" onclick="filterCards('all', this)">All</button>
+      <button class="filter-pill" onclick="filterCards('stress', this)">🔴 Stress Squad</button>
+      <button class="filter-pill" onclick="filterCards('brain', this)">🧠 Brain HQ</button>
+      <button class="filter-pill" onclick="filterCards('feelgood', this)">✨ Feel-Good Gang</button>
+      <button class="filter-pill" onclick="filterCards('sleep', this)">🌙 Night Shift</button>
+    </div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </div>
+
+  <!-- MOOD TAB -->
+  <div id="tab-mood" class="hidden mood-wrapper">
+    <div class="mood-intro">
+      <h2>How are you feeling right now?</h2>
+      <p>Pick the option that fits best — we'll show you which crew members are probably at play.</p>
+    </div>
+    <div class="mood-options" id="mood-options"></div>
+    <div class="mood-result" id="mood-result">
+      <div class="mood-result-title" id="mood-result-title"></div>
+      <div class="mood-crew" id="mood-result-crew"></div>
+      <div class="mood-explanation" id="mood-result-explanation"></div>
+      <div class="mood-tip-box" id="mood-result-tip"></div>
+      <button class="mood-reset-btn" onclick="resetMood()">← Try another feeling</button>
+    </div>
+  </div>
+
+  <!-- QUIZ TAB -->
+  <div id="tab-quiz" class="hidden quiz-wrapper">
+    <div id="quiz-content"></div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal-inner">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+    <div class="modal-nav">
+      <button class="modal-nav-btn" onclick="navModal(-1)">← Prev</button>
+      <button class="modal-nav-btn" onclick="navModal(1)">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const characters = [
+  {
+    id: 'cortisol',
+    realName: 'Cortisol',
+    charName: 'Cort the Code Red',
+    tagline: '"Still here. Still ringing. Still not sure why."',
+    emoji: '⏰',
+    color: '#ff6b35',
+    category: 'stress',
+    categoryLabel: 'Stress Squad',
+    role: "Cort is your body's built-in alarm — useful in short bursts, exhausting when he won't switch off. He's behind that wired, on-edge, can't-relax feeling when life gets too much.",
+    deepDive: "Cortisol is made in your adrenal glands — two tiny structures that sit on top of your kidneys. In small doses, Cort is your friend: he wakes you up in the morning, sharpens your focus before a deadline, and helps you push through hard things. The problem kicks in when stress keeps him running constantly. Long-term high cortisol quietly messes with your memory, immune system, sleep, and mood — often without you realising. He also suppresses Sunny and Mel, which is why chronic stress leaves you flat during the day and wired at night.",
+    stats: ['😰 Stress hormone', '📉 Too much = burnout', '🌅 Peaks in the morning', '🧠 Affects memory'],
+    tip: "Two minutes of slow breathing measurably drops Cort's levels. Try box breathing: in for 4, hold 4, out for 4, hold 4. It feels too simple to work. It isn't.",
+    quizQ: "Where is cortisol produced in your body?",
+    quizOpts: ["In your brain", "In your adrenal glands", "In your liver", "In your heart"],
+    quizA: 1,
+    quizFeedback: "Cortisol is made in the adrenal glands — small structures that sit on top of your kidneys. They release cortisol when your brain signals that something stressful is happening."
+  },
+  {
+    id: 'adrenaline',
+    realName: 'Adrenaline',
+    charName: 'Addie the Alarm',
+    tagline: '"Threat detected. Body hijacked. You\'re welcome."',
+    emoji: '⚡',
+    color: '#e63946',
+    category: 'stress',
+    categoryLabel: 'Stress Squad',
+    role: "Addie fires in milliseconds the moment your brain suspects danger — real or not. Heart pounding, palms sweating, tunnel vision. That's her. Fast, powerful, and she doesn't ask permission.",
+    deepDive: "Adrenaline (also called epinephrine) evolved to help your ancestors sprint from predators — and it's still running that same software today. The catch? Your brain can't tell the difference between a charging lion and an awkward silence in a conversation. Addie reacts either way. She diverts blood to your muscles, shuts down digestion, and narrows your focus. In genuine emergencies, brilliant. In everyday life, exhausting.",
+    stats: ['⚡ Fires in milliseconds', '💓 Raises heart rate', '🏃 Fight or flight', '🦁 Can\'t distinguish threats'],
+    tip: "When Addie fires unexpectedly, your body needs to move. Even 60 seconds of movement — a walk, jumping jacks, shaking your hands — helps burn off the adrenaline surge faster.",
+    quizQ: "Adrenaline is also known as...",
+    quizOpts: ["Dopamine", "Serotonin", "Epinephrine", "Melatonin"],
+    quizA: 2,
+    quizFeedback: "Adrenaline and epinephrine are the same hormone — just different names. 'Epinephrine' is the medical term, while 'adrenaline' comes from the name of the adrenal glands where it's made."
+  },
+  {
+    id: 'amygdala',
+    realName: 'Amygdala',
+    charName: 'Amy G. Dala',
+    tagline: '"I decide what\'s a threat before you even know you saw it."',
+    emoji: '🧠',
+    color: '#9b5de5',
+    category: 'brain',
+    categoryLabel: 'Brain HQ',
+    role: "Amy isn't a hormone — she's the brain's threat detector, and she's the one who triggers Cort and Addie. She processes everything you see and hear before your conscious brain even gets involved.",
+    deepDive: "The amygdala is an almond-shaped structure deep in your brain, and it's been called your brain's 'smoke detector'. It's constantly scanning your environment for anything that looks like a threat — and when it spots one (real or imagined), it fires off a stress response in milliseconds. This is called 'amygdala hijack'. The tricky part: Amy responds strongly to social threats (rejection, embarrassment, conflict) just like physical ones. She also holds emotional memories, which is why certain sounds or smells can trigger a fear response before you even understand why.",
+    stats: ['🔍 Threat scanner', '⚡ Triggers stress response', '💾 Stores emotional memories', '🤝 Social threat detector'],
+    tip: "Naming your emotion ('I feel anxious') actually reduces Amy's activity — it's called 'affect labelling'. Studies show that putting feelings into words calms the amygdala response. Try it.",
+    quizQ: "What does the amygdala do when it detects a threat?",
+    quizOpts: ["Makes you sleepy", "Triggers a stress response", "Releases serotonin", "Slows your heart down"],
+    quizA: 1,
+    quizFeedback: "When the amygdala detects a threat, it triggers the stress response — telling the adrenal glands to release adrenaline and cortisol. This all happens before your conscious brain has time to process what's going on."
+  },
+  {
+    id: 'dopamine',
+    realName: 'Dopamine',
+    charName: 'Dopa the Dynamo',
+    tagline: '"Almost there. Keep going. Imagine how good it\'ll feel."',
+    emoji: '🎯',
+    color: '#f77f00',
+    category: 'feelgood',
+    categoryLabel: 'Feel-Good Gang',
+    role: "Dopa is your motivation engine. She's less about the reward itself and more about the chase — the anticipation, the pursuit, the almost-there feeling. She's what keeps you going.",
+    deepDive: "Dopamine is often called the 'pleasure chemical' but that's a bit misleading — it's really the wanting chemical. Dopamine fires most strongly in anticipation of a reward, not when you actually get it. This is why scrolling feels exciting, but never quite satisfying. It's why you crave the next episode immediately. Social media, games, and junk food are all engineered to exploit Dopa's reward loop. The good news: Dopa also fires when you make progress toward a meaningful goal — which is why breaking big tasks into small wins is so effective.",
+    stats: ['🎯 Motivation & drive', '🔄 Reward loop', '📱 Exploited by social media', '✅ Fires on progress'],
+    tip: "To use Dopa intentionally: set one small, specific task and complete it. The tick creates a genuine dopamine hit. Stack small wins across a day and you'll feel genuinely motivated — not artificially hyped.",
+    quizQ: "When does dopamine fire most strongly?",
+    quizOpts: ["After you get the reward", "While anticipating the reward", "While you're sleeping", "When you're calm"],
+    quizA: 1,
+    quizFeedback: "Dopamine fires most strongly in anticipation of a reward — the wanting, not the having. This is why the chase often feels better than actually getting what you wanted, and why social media keeps you scrolling (always almost satisfying, never quite)."
+  },
+  {
+    id: 'serotonin',
+    realName: 'Serotonin',
+    charName: 'Sunny the Stabiliser',
+    tagline: '"Not a high. Just... good. Solid. Okay."',
+    emoji: '☀️',
+    color: '#f4c430',
+    category: 'feelgood',
+    categoryLabel: 'Feel-Good Gang',
+    role: "Sunny is your baseline mood regulator. She's not about excitement — she's about that steady, calm, everything's-going-to-be-okay feeling. Low Sunny = low mood, anxiety, poor sleep.",
+    deepDive: "About 90% of your serotonin lives in your gut — not your brain. This is part of why your diet, sleep, and physical health have such a strong impact on your mood. Sunny is deeply affected by sunlight (one reason low mood is more common in winter), exercise, and social connection. Most antidepressants work by keeping serotonin active longer in your brain. Cort (cortisol) actively suppresses Sunny, which is why chronic stress often leads to low mood — it's not just in your head, it's chemistry.",
+    stats: ['🧘 Mood stabiliser', '☀️ Boosted by sunlight', '🦠 90% lives in your gut', '😔 Low = low mood'],
+    tip: "Get outside within an hour of waking up, even for 10 minutes. Natural light triggers serotonin production and helps set your body clock — which also improves sleep later. It's one of the most evidence-backed mood habits there is.",
+    quizQ: "Where is most of your serotonin found?",
+    quizOpts: ["Your brain", "Your heart", "Your gut", "Your muscles"],
+    quizA: 2,
+    quizFeedback: "Around 90% of the body's serotonin is found in the gut — not the brain. This is one reason why diet and gut health have such a significant effect on mood, and why the gut-brain connection is such an active area of research."
+  },
+  {
+    id: 'oxytocin',
+    realName: 'Oxytocin',
+    charName: 'Oxy the Outreacher',
+    tagline: '"You\'re not alone. I\'ve got you. (Also — hug someone.)"',
+    emoji: '🤗',
+    color: '#ff70a6',
+    category: 'feelgood',
+    categoryLabel: 'Feel-Good Gang',
+    role: "Oxy is the connection chemical. She releases during physical touch, trust, and genuine social bonding — and she directly counters the stress hormones Cort and Addie.",
+    deepDive: "Oxytocin is released through hugging, physical affection, deep conversation, and even petting an animal. It reduces cortisol, lowers blood pressure, and increases feelings of safety and trust. It's not just a 'love hormone' though — Oxy also strengthens in-group bonds, which can sometimes increase distrust of outsiders. It plays a key role in attachment between parents and babies. For teenagers specifically, peer connection and trust are major drivers of oxytocin — which is why social rejection can feel so physically painful.",
+    stats: ['🤝 Connection & trust', '💆 Reduces cortisol', '🐾 Released with pets too', '👶 Bonding hormone'],
+    tip: "A genuine 20-second hug releases a meaningful dose of oxytocin — long enough for your body to register the contact. Can't hug someone? A 5-minute real conversation (no phones) or petting an animal works too.",
+    quizQ: "Which of these activities releases oxytocin?",
+    quizOpts: ["Scrolling social media", "Physical exercise alone", "Hugging someone", "Drinking energy drinks"],
+    quizA: 2,
+    quizFeedback: "Oxytocin is released through physical touch, genuine social bonding, and even petting animals. It directly counteracts stress hormones — which is why human connection is one of the most effective stress relievers your body has."
+  },
+  {
+    id: 'endorphins',
+    realName: 'Endorphins',
+    charName: 'Finn & the Flyers',
+    tagline: '"Pain? What pain? Just keep moving."',
+    emoji: '🏃',
+    color: '#00c9a7',
+    category: 'feelgood',
+    categoryLabel: 'Feel-Good Gang',
+    role: "Finn and the crew are your body's natural painkillers — and mood boosters. They kick in during exercise, laughter, and physical challenge, creating that post-workout high.",
+    deepDive: "Endorphins are a group of chemicals (hence 'Finn & the Flyers') that work like the body's built-in morphine — binding to the same receptors as opioid painkillers. They reduce pain perception and create feelings of euphoria. The famous 'runner's high' is endorphins in action. You don't need to run a marathon though — even 20 minutes of moderately intense exercise releases them. Laughter is also a genuine endorphin trigger, which is why a good laugh physically lifts your mood. Cold exposure and chilli food can also trigger a small endorphin release.",
+    stats: ['💊 Natural painkiller', '🏅 Runner\'s high', '😂 Triggered by laughter', '❄️ Cold exposure works too'],
+    tip: "20 minutes of exercise intense enough to make conversation slightly difficult is enough to get a real endorphin release. You don't need to destroy yourself — just get your heart rate up consistently.",
+    quizQ: "What gives you the 'runner's high'?",
+    quizOpts: ["Adrenaline rush", "Endorphins", "Cortisol drop", "Extra oxygen"],
+    quizA: 1,
+    quizFeedback: "The 'runner's high' is caused by endorphins — the body's natural painkiller chemicals. They bind to the same receptors as opioid painkillers, reducing pain and creating a temporary feeling of euphoria. Laughter triggers a similar effect!"
+  },
+  {
+    id: 'melatonin',
+    realName: 'Melatonin',
+    charName: 'Mel the Midnight Messenger',
+    tagline: '"Darkness received. Sleep protocol initiated."',
+    emoji: '🌙',
+    color: '#4cc9f0',
+    category: 'sleep',
+    categoryLabel: 'Night Shift',
+    role: "Mel is triggered by darkness and tells your brain it's time to sleep. She's deeply sensitive to light — especially the blue light from screens — which is literally why scrolling at night wrecks your sleep.",
+    deepDive: "Melatonin is produced in the pineal gland — a tiny, pea-sized structure in the middle of your brain. It starts rising about 2 hours before your natural sleep time, peaking in the middle of the night and falling again toward morning. The problem: your eyes contain special receptors (ipRGCs) that are extremely sensitive to blue light — the kind emitted by phones and laptops. Even moderate screen brightness can suppress melatonin production for hours. Teenagers also naturally produce melatonin later in the evening (a genuine biological shift during puberty), which is why going to bed early often feels impossible — it's not laziness.",
+    stats: ['🌑 Triggered by darkness', '📱 Blocked by blue light', '🧬 Shifts later in teens', '💤 Peaks at midnight'],
+    tip: "Dim your screens or use night mode 90 minutes before bed. Even better — put your phone in another room. Mel can't work if your eyes are still receiving bright light signals. The science on this is very clear.",
+    quizQ: "Why do screens before bed disrupt sleep?",
+    quizOpts: ["They make your brain too active", "Blue light suppresses melatonin", "They increase cortisol", "They trigger adrenaline"],
+    quizA: 1,
+    quizFeedback: "Screen blue light suppresses melatonin production — sometimes for hours. Your eyes contain special receptors that interpret blue light as 'daytime', telling Mel to hold off. Even dimmed screens have this effect, which is why night mode helps but isn't a complete fix."
+  }
+];
+
+const moods = [
+  {
+    emoji: '😰', label: 'Stressed / Overwhelmed',
+    crew: ['⏰ Cort the Code Red', '⚡ Addie the Alarm', '🧠 Amy G. Dala'],
+    explanation: "When you're feeling overwhelmed, Cort (cortisol) is running high — probably has been for a while. Amy G. Dala has flagged something as a threat, which fired up Addie (adrenaline) too. This combo keeps you in a state of high alert even when there's no immediate danger.",
+    tip: "<strong>What helps:</strong> Box breathing for 2 minutes brings Cort down fast. Moving your body (even a short walk) burns off Addie's adrenaline surge. And naming what you're stressed about — literally saying it out loud — reduces Amy's threat response."
+  },
+  {
+    emoji: '😔', label: 'Low / Flat / Empty',
+    crew: ['☀️ Sunny the Stabiliser', '🎯 Dopa the Dynamo'],
+    explanation: "A flat, low-mood feeling often points to Sunny (serotonin) being low — possibly suppressed by ongoing stress. Dopa (dopamine) may also be quiet, which is why motivation is hard to find and nothing feels particularly worth doing.",
+    tip: "<strong>What helps:</strong> Get outside within an hour of waking — natural light is one of the fastest ways to boost Sunny. Setting one tiny achievable task creates a small dopamine hit that can kickstart Dopa. Movement helps both."
+  },
+  {
+    emoji: '😤', label: 'Irritable / On Edge',
+    crew: ['⏰ Cort the Code Red', '🧠 Amy G. Dala'],
+    explanation: "Irritability is often a sign that Cort has been elevated for too long and Amy G. Dala is in a hypervigilant state — treating small things as big threats. When your threat detection system is turned up high, everything feels more annoying, everything feels more personal.",
+    tip: "<strong>What helps:</strong> Rest and sleep are the most effective ways to reset an overactive stress response. Even a 20-minute rest (not necessarily sleep) can reduce cortisol. Before reacting to something irritating, try the 4-second pause — it gives your conscious brain time to override Amy."
+  },
+  {
+    emoji: '😄', label: 'Happy / Energised',
+    crew: ['🎯 Dopa the Dynamo', '☀️ Sunny the Stabiliser', '🏃 Finn & the Flyers'],
+    explanation: "Feeling good? That's Dopa (dopamine) and Sunny (serotonin) both sitting at healthy levels, likely with some Finn & the Flyers (endorphins) in the mix. This is your baseline wellbeing — and it's worth noticing what helped you get here so you can do it again.",
+    tip: "<strong>Worth knowing:</strong> This feeling is more sustainable than it seems. The habits that got you here (movement, connection, sleep, doing things that matter) are what keep these chemicals balanced long-term. Not hacks — just the basics, done consistently."
+  },
+  {
+    emoji: '😴', label: 'Exhausted / Can\'t Sleep',
+    crew: ['🌙 Mel the Midnight Messenger', '⏰ Cort the Code Red'],
+    explanation: "If you're tired but can't sleep, it's likely Mel (melatonin) being blocked — often by screens or light — while Cort (cortisol) is still running high. High cortisol and low melatonin are a classic combination when stress has been sustained for too long.",
+    tip: "<strong>What helps:</strong> Screens off 90 minutes before sleep. Keep your room cool and dark — Mel needs both to do her job. If your brain won't switch off, write down everything on your mind before bed. Getting it out of your head and onto paper reduces cortisol and lets Mel take over."
+  },
+  {
+    emoji: '🤩', label: 'Excited / Hyped',
+    crew: ['🎯 Dopa the Dynamo', '⚡ Addie the Alarm'],
+    explanation: "That buzzy, lit-up feeling is Dopa (dopamine) in anticipation mode, often with a mild kick of Addie (adrenaline) — your body's way of preparing for something big. The line between excitement and anxiety is often thin: both involve elevated heart rate, but Dopa's presence tips it toward the positive.",
+    tip: "<strong>Interesting fact:</strong> Research shows that reframing anxiety as excitement ('I'm excited' instead of 'I'm nervous') actually improves performance — because the chemical profile is so similar. Dopa responds to your interpretation of a situation, not just the situation itself."
+  },
+  {
+    emoji: '🥰', label: 'Connected / Warm',
+    crew: ['🤗 Oxy the Outreacher', '☀️ Sunny the Stabiliser'],
+    explanation: "That warm, connected, safe-with-people feeling? That's Oxy (oxytocin) doing exactly what she's built for. She's usually paired with good Sunny (serotonin) levels too — genuine human connection boosts both simultaneously.",
+    tip: "<strong>What helps you stay here:</strong> Oxy is sustained by ongoing trust and connection — not just one-off moments. Real conversations (without phones), physical contact, and helping others all keep her active. Oxy also directly suppresses Cort, which is why being around good people makes stress feel smaller."
+  },
+  {
+    emoji: '😬', label: 'Anxious / Nervous',
+    crew: ['🧠 Amy G. Dala', '⚡ Addie the Alarm', '⏰ Cort the Code Red'],
+    explanation: "Anxiety is Amy G. Dala in overdrive — scanning for threats that may not be there and triggering Addie and Cort as a precaution. The body enters a low-level fight-or-flight state: heart rate up, thoughts racing, stomach unsettled. The tricky thing is Amy can't always distinguish real threats from imagined ones.",
+    tip: "<strong>What helps:</strong> Slow, controlled breathing (the 4-7-8 technique: in for 4, hold 7, out for 8) directly activates the parasympathetic nervous system — your body's 'rest' state. Also: name the feeling. Research shows that labelling 'I feel anxious' reduces amygdala activity measurably."
+  }
+];
+
+// ── SUPABASE ──
+const SUPABASE_URL = 'https://tvwnsiftckyoukzxxcsn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qYpuQwjoqhamY00cdp5UDQ_sg_OFF7_';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let studentName = '';
+let surname = '';
+let recordId = null;
+let openedCards = new Set();
+let saveTimeout = null;
+
+async function startSession() {
+  const name = document.getElementById('input-name').value.trim();
+  const sur = document.getElementById('input-surname').value.trim();
+  if (!name || !sur) { document.getElementById('login-error').classList.add('show'); return; }
+  studentName = name; surname = sur;
+  document.getElementById('login-error').classList.remove('show');
+
+  const { data } = await sb.from('body_hq_progress')
+    .select('*').eq('student_name', name).eq('surname', sur).maybeSingle();
+
+  if (data) {
+    recordId = data.id;
+    if (data.cards_opened) openedCards = new Set(JSON.parse(data.cards_opened));
+    quizScore = data.quiz_score || 0;
+  } else {
+    const { data: newRow } = await sb.from('body_hq_progress').insert({
+      student_name: name, surname: sur,
+      quiz_score: 0, cards_opened: '[]',
+      completed: false, updated_at: new Date().toISOString()
+    }).select().single();
+    if (newRow) recordId = newRow.id;
+  }
+
+  document.getElementById('login-screen').classList.add('hidden');
+  renderCards();
+  renderMoodOptions();
+  renderQuiz();
+}
+
+async function saveProgress(completed = false) {
+  if (!recordId) return;
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    const update = {
+      quiz_score: quizScore,
+      cards_opened: JSON.stringify([...openedCards]),
+      updated_at: new Date().toISOString()
+    };
+    if (completed) { update.completed = true; update.completed_at = new Date().toISOString(); }
+    await sb.from('body_hq_progress').update(update).eq('id', recordId);
+    const el = document.getElementById('save-indicator');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2000);
+  }, 600);
+}
+
+// Floating crew on login
+function startFloats() {
+  const wrap = document.getElementById('login-floats');
+  const emojis = ['⏰','⚡','🧠','🎯','☀️','🤗','🏃','🌙'];
+  emojis.forEach((em, i) => {
+    const el = document.createElement('div');
+    el.className = 'float-emoji';
+    el.textContent = em;
+    const dur = 4 + Math.random() * 3;
+    el.style.cssText = `left:${8+i*11}%;bottom:-20px;animation-duration:${dur}s;animation-delay:${Math.random()*3}s`;
+    wrap.appendChild(el);
+  });
+}
+startFloats();
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) startSession();
+});
+
+let currentFilter = 'all';
+let currentModalIndex = 0;
+let quizIndex = 0;
+let quizScore = 0;
+let quizAnswered = false;
+let activeTab = 'cards';
+
+function getCategoryColor(cat) {
+  return { stress: '#e63946', brain: '#9b5de5', feelgood: '#00c9a7', sleep: '#4cc9f0' }[cat] || '#fff';
+}
+
+function renderCards() {
+  const grid = document.getElementById('cards-grid');
+  const filtered = currentFilter === 'all' ? characters : characters.filter(c => c.category === currentFilter);
+  grid.innerHTML = filtered.map((c, i) => `
+    <div class="char-card" onclick="openModal('${c.id}')" style="animation-delay: ${i * 0.05}s">
+      <div class="card-category-label">
+        <span class="card-category-dot" style="background:${getCategoryColor(c.category)}"></span>
+        ${c.categoryLabel}
+      </div>
+      <span class="card-emoji">${c.emoji}</span>
+      <div class="card-real-name" style="color:${c.color}">${c.realName}</div>
+      <div class="card-char-name">${c.charName}</div>
+      <div class="card-tagline">${c.tagline}</div>
+    </div>
+  `).join('');
+}
+
+function filterCards(cat, el) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderCards();
+}
+
+function openModal(id) {
+  currentModalIndex = characters.findIndex(c => c.id === id);
+  renderModal();
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  openedCards.add(id);
+  saveProgress();
+}
+
+function renderModal() {
+  const c = characters[currentModalIndex];
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-emoji">${c.emoji}</div>
+    <div class="modal-real-name" style="color:${c.color}">${c.realName} · ${c.categoryLabel}</div>
+    <div class="modal-char-name">${c.charName}</div>
+    <div class="modal-tagline">${c.tagline}</div>
+    <div class="modal-stats">${c.stats.map(s => `<span class="modal-stat">${s}</span>`).join('')}</div>
+    <div class="modal-section">
+      <div class="modal-section-label">What they do</div>
+      <p>${c.role}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">The science</div>
+      <p>${c.deepDive}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">💡 Real-life tip</div>
+    </div>
+    <div class="modal-tip">${c.tip}</div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+function navModal(dir) {
+  currentModalIndex = (currentModalIndex + dir + characters.length) % characters.length;
+  renderModal();
+  document.getElementById('modal-inner').scrollTop = 0;
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['cards','mood','quiz'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['cards','mood','quiz'][i] === tab);
+  });
+  if (tab === 'quiz') renderQuiz();
+  if (tab === 'mood') renderMoodOptions();
+}
+
+function renderMoodOptions() {
+  document.getElementById('mood-options').innerHTML = moods.map((m, i) => `
+    <button class="mood-btn" onclick="selectMood(${i})">
+      <span class="mood-btn-emoji">${m.emoji}</span>
+      <span class="mood-btn-label">${m.label}</span>
+    </button>
+  `).join('');
+  document.getElementById('mood-result').classList.remove('show');
+}
+
+function selectMood(i) {
+  document.querySelectorAll('.mood-btn').forEach((b, j) => b.classList.toggle('selected', j === i));
+  const m = moods[i];
+  document.getElementById('mood-result-title').textContent = `${m.emoji} ${m.label}`;
+  document.getElementById('mood-result-crew').innerHTML = m.crew.map(c => `<span class="mood-crew-chip">${c}</span>`).join('');
+  document.getElementById('mood-result-explanation').textContent = m.explanation;
+  document.getElementById('mood-result-tip').innerHTML = m.tip;
+  document.getElementById('mood-result').classList.add('show');
+  document.getElementById('mood-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetMood() {
+  renderMoodOptions();
+}
+
+function renderQuiz() {
+  const el = document.getElementById('quiz-content');
+  if (quizIndex >= characters.length) {
+    const pct = Math.round((quizScore / characters.length) * 100);
+    saveProgress(true);
+    const msg = pct === 100 ? "Perfect score! You know your crew inside out." :
+                pct >= 75 ? "Great work — you've got a solid handle on your body's chemistry." :
+                pct >= 50 ? "Good start! Read through the character cards to lock in the ones you missed." :
+                "Keep exploring the crew cards — the science becomes easier once you know the characters.";
+    el.innerHTML = `
+      <div class="score-card">
+        <div class="score-number">${quizScore}/${characters.length}</div>
+        <div class="score-label">${pct}% correct</div>
+        <div class="score-message">${msg}</div>
+        <button class="retry-btn" onclick="resetQuiz()">Try Again</button>
+      </div>
+    `;
+    return;
+  }
+  const c = characters[quizIndex];
+  const dots = characters.map((_, i) =>
+    `<div class="quiz-progress-dot ${i < quizIndex ? 'done' : i === quizIndex ? 'current' : ''}"></div>`
+  ).join('');
+  el.innerHTML = `
+    <div class="quiz-progress">${dots}</div>
+    <div class="quiz-card">
+      <div class="quiz-number">Question ${quizIndex + 1} of ${characters.length}</div>
+      <div class="quiz-question">${c.quizQ}</div>
+      <div class="quiz-char">${c.emoji} ${c.charName} · ${c.realName}</div>
+      <div class="quiz-options" id="quiz-opts">
+        ${c.quizOpts.map((o, i) => `<button class="quiz-option" onclick="answerQuiz(${i})">${o}</button>`).join('')}
+      </div>
+      <div class="quiz-feedback" id="quiz-feedback">${c.quizFeedback}</div>
+      <button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">${quizIndex < characters.length - 1 ? 'Next question →' : 'See my score →'}</button>
+    </div>
+  `;
+}
+
+function answerQuiz(selected) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const c = characters[quizIndex];
+  const opts = document.querySelectorAll('.quiz-option');
+  opts.forEach((o, i) => {
+    o.disabled = true;
+    if (i === c.quizA) o.classList.add('correct');
+    else if (i === selected) o.classList.add('wrong');
+  });
+  if (selected === c.quizA) quizScore++;
+  document.getElementById('quiz-feedback').classList.add('show');
+  document.getElementById('quiz-next').classList.add('show');
+  saveProgress();
+}
+
+function nextQuestion() {
+  quizIndex++;
+  quizAnswered = false;
+  renderQuiz();
+}
+
+function resetQuiz() {
+  quizIndex = 0;
+  quizScore = 0;
+  quizAnswered = false;
+  renderQuiz();
+}
+
+// Init — app starts via startSession() after login
+</script>
+</body>
+</html>
