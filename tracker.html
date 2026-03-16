@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SBF · 21 Day Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --surface: #f7f7f8; --surface2: #efefef;
+  --border: rgba(0,0,0,0.09); --text: #111; --muted: #555;
+  --red: #e63946; --red-light: #ff6b6b; --green: #1a9e4a; --radius: 16px;
+}
+html, body { min-height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+
+/* LOGIN */
+.login-screen { position: fixed; inset: 0; background: #f7f7f8; z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; }
+.login-screen.hidden { display: none; }
+.login-box { background: white; border: 1px solid var(--border); border-radius: 24px; padding: 36px 32px; width: 100%; max-width: 420px; position: relative; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.06); }
+.floating-crew { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: 24px; }
+.float-emoji { position: absolute; font-size: 1.5rem; animation: floatUp linear infinite; opacity: 0; pointer-events: none; }
+@keyframes floatUp { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 10% { opacity: 0.7; } 90% { opacity: 0.4; } 100% { transform: translateY(-350px) rotate(20deg); opacity: 0; } }
+.login-tagline { font-family: 'Nunito', sans-serif; font-size: clamp(1.8rem, 5vw, 2.4rem); font-weight: 900; line-height: 1.1; margin-bottom: 6px; color: #111; }
+.login-tagline span { color: var(--red); }
+.login-sub { font-size: 0.84rem; color: var(--muted); margin-top: 8px; margin-bottom: 24px; line-height: 1.6; }
+.login-field { margin-bottom: 14px; position: relative; z-index: 1; }
+.login-field label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+.login-field input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+.login-field input:focus { border-color: var(--red); }
+.login-field input::placeholder { color: #aaa; }
+.login-error { font-size: 0.82rem; color: var(--red); margin-bottom: 12px; display: none; }
+.login-error.show { display: block; }
+.login-btn { width: 100%; background: var(--red); color: white; border: none; border-radius: 12px; padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 4px; position: relative; z-index: 1; }
+.login-btn:hover { background: var(--red-light); transform: translateY(-1px); }
+
+/* MAIN APP */
+.app { display: none; max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
+.app.visible { display: block; }
+
+/* HEADER */
+.app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.app-title { font-family: 'Nunito', sans-serif; font-size: 1.6rem; font-weight: 900; color: #111; }
+.app-title span { color: var(--red); }
+.greeting { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+.habit-badge { background: rgba(230,57,70,0.07); border: 1px solid rgba(230,57,70,0.2); border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: #111; max-width: 240px; }
+.habit-badge-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 3px; }
+.no-plan-msg { font-size: 0.8rem; color: var(--muted); font-style: italic; }
+
+/* STATS */
+.stats-row { display: flex; gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; flex: 1; }
+.stat-num { font-family: 'Nunito', sans-serif; font-size: 2.2rem; font-weight: 900; color: var(--red); line-height: 1; }
+.stat-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-top: 3px; }
+.streak-bar { background: var(--surface2); border-radius: 999px; height: 5px; overflow: hidden; margin-top: 8px; }
+.streak-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--red-light)); border-radius: 999px; transition: width 0.5s ease; }
+
+/* TRACKER GRID */
+.week-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; margin-top: 20px; }
+.week-label:first-of-type { margin-top: 0; }
+.day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 4px; }
+.day-cell { aspect-ratio: 1; border-radius: 12px; border: 1px solid var(--border); background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.day-cell:hover { border-color: var(--red); transform: translateY(-1px); }
+.day-cell .dn { font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800; color: #aaa; }
+.day-cell .dl { font-size: 0.5rem; font-weight: 700; text-transform: uppercase; color: #ccc; letter-spacing: 0.05em; }
+.day-cell .day-mood { font-size: 0.75rem; margin-top: 1px; }
+.day-cell.checked { background: var(--red); border-color: var(--red); box-shadow: 0 2px 8px rgba(230,57,70,0.25); }
+.day-cell.checked .dn, .day-cell.checked .dl { display: none; }
+.day-cell.checked::after { content: '✓'; font-size: 1.3rem; font-weight: 900; color: white; }
+.day-cell.checked .day-mood { display: none; }
+
+/* MOOD MODAL */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.modal { background: white; border-radius: 24px; padding: 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.12); animation: slideUp 0.3s ease; }
+@keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+.modal h3 { font-family: 'Nunito', sans-serif; font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; color: #111; }
+.modal p { font-size: 0.84rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+.mood-options { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.mood-opt { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 12px 10px; cursor: pointer; transition: all 0.2s; text-align: center; min-width: 58px; }
+.mood-opt:hover { border-color: var(--red); transform: translateY(-2px); }
+.mood-opt.selected { border-color: var(--red); background: rgba(230,57,70,0.06); }
+.mood-opt .mo-emoji { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+.mood-opt .mo-label { font-size: 0.68rem; font-weight: 700; color: var(--muted); }
+.mood-opt.selected .mo-label { color: var(--red); }
+.btn { display: inline-flex; align-items: center; gap: 8px; background: var(--red); color: white; border: none; border-radius: 12px; padding: 13px 26px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn:hover { background: var(--red-light); transform: translateY(-1px); }
+.btn-full { width: 100%; justify-content: center; }
+
+/* MILESTONE TOAST */
+.toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-120px); z-index: 300; background: #111; color: white; border-radius: 16px; padding: 14px 28px; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800; box-shadow: 0 12px 40px rgba(0,0,0,0.2); transition: transform 0.5s cubic-bezier(.34,1.56,.64,1); text-align: center; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast-sub { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: #aaa; margin-top: 2px; }
+
+/* CONFETTI */
+.confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+.confetti-piece { position: absolute; width: 10px; height: 10px; top: -20px; opacity: 0; animation: confettiFall linear forwards; border-radius: 2px; }
+@keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+/* SAVE INDICATOR */
+.save-indicator { position: fixed; bottom: 20px; right: 20px; background: white; border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px; font-size: 0.78rem; font-weight: 600; color: var(--muted); z-index: 90; opacity: 0; transition: opacity 0.3s; pointer-events: none; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.save-indicator.show { opacity: 1; }
+
+/* PRINT */
+.print-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.print-bar p { font-size: 0.84rem; color: var(--muted); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover { color: var(--text); border-color: rgba(0,0,0,0.2); background: transparent; transform: none; }
+
+/* COMPLETE BANNER */
+.complete-banner { background: linear-gradient(135deg, #111 0%, #333 100%); border-radius: var(--radius); padding: 28px; text-align: center; margin-top: 24px; color: white; }
+.complete-banner h2 { font-family: 'Nunito', sans-serif; font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+.complete-banner p { font-size: 0.9rem; color: #aaa; line-height: 1.6; }
+
+@media print {
+  .login-screen, .save-indicator, .toast, .overlay, .print-bar .btn { display: none !important; }
+  body { background: white; }
+  .day-cell.checked { background: #e63946 !important; -webkit-print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<!-- CONFETTI -->
+<div class="confetti-wrap" id="confetti-wrap"></div>
+
+<!-- SAVE INDICATOR -->
+<div class="save-indicator" id="save-indicator">✓ Progress saved</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div id="toast-msg">🎉 Day 7 complete!</div>
+  <div class="toast-sub" id="toast-sub">Keep going — you're building something real.</div>
+</div>
+
+<!-- MOOD MODAL -->
+<div class="overlay" id="mood-overlay">
+  <div class="modal">
+    <h3>How did it feel? 💭</h3>
+    <p>Rate your mood <em>after</em> today's activity.</p>
+    <div class="mood-options">
+      <div class="mood-opt" onclick="selectMood('😴','Tired')"><span class="mo-emoji">😴</span><span class="mo-label">Tired</span></div>
+      <div class="mood-opt" onclick="selectMood('😐','Okay')"><span class="mo-emoji">😐</span><span class="mo-label">Okay</span></div>
+      <div class="mood-opt" onclick="selectMood('🙂','Good')"><span class="mo-emoji">🙂</span><span class="mo-label">Good</span></div>
+      <div class="mood-opt" onclick="selectMood('😄','Great')"><span class="mo-emoji">😄</span><span class="mo-label">Great</span></div>
+      <div class="mood-opt" onclick="selectMood('🔥','Amazing')"><span class="mo-emoji">🔥</span><span class="mo-label">Amazing</span></div>
+    </div>
+    <button class="btn btn-full" onclick="saveMood()">Save ✓</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="floating-crew" id="login-floats"></div>
+    <div style="position:relative;z-index:1">
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--red);margin-bottom:10px">SBF · Physical Wellness</div>
+      <div class="login-tagline">21 Day<br><span>Challenge.</span></div>
+      <p class="login-sub">Enter your name and grade to open your tracker.</p>
+      <div class="login-field">
+        <label>First name</label>
+        <input type="text" id="input-name" placeholder="e.g. Jamie" maxlength="50">
+      </div>
+      <div class="login-field">
+        <label>Grade</label>
+        <input type="text" id="input-grade" placeholder="e.g. Grade 8" maxlength="50">
+      </div>
+      <div class="login-error" id="login-error">Please enter your first name and grade.</div>
+      <button class="login-btn" onclick="startSession()">Open my tracker →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="app">
+
+  <div class="app-header">
+    <div>
+      <div class="app-title">21 Day <span>Challenge</span></div>
+      <div class="greeting" id="greeting">Welcome back!</div>
+    </div>
+    <div class="habit-badge" id="habit-badge">
+      <div class="habit-badge-label">Your challenge</div>
+      <div id="badge-text"><span class="no-plan-msg">No plan set yet</span></div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-done">0</div>
+      <div class="stat-label">Days done</div>
+      <div class="streak-bar"><div class="streak-fill" id="streak-fill" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-streak">0</div>
+      <div class="stat-label">Streak 🔥</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-left">21</div>
+      <div class="stat-label">Remaining</div>
+    </div>
+  </div>
+
+  <div class="week-label">Week 1 — Days 1–7</div>
+  <div class="day-grid" id="week1"></div>
+  <div class="week-label">Week 2 — Days 8–14</div>
+  <div class="day-grid" id="week2"></div>
+  <div class="week-label">Week 3 — Days 15–21</div>
+  <div class="day-grid" id="week3"></div>
+
+  <div class="print-bar">
+    <p>Save your tracker as an image to share or print.</p>
+    <button class="btn btn-outline" id="export-btn" onclick="exportJPG()">📸 Export as JPG</button>
+  </div>
+
+  <div class="complete-banner" id="complete-banner" style="display:none">
+    <div style="font-size:3rem;margin-bottom:10px">🏆</div>
+    <h2>You did it.</h2>
+    <p>21 days of showing up. Your brain has literally rewired itself.<br>That's yours now — nobody can take it away.</p>
+  </div>
+
+</div>
+
+<script>
+// ── SUPABASE ──
+const SUPABASE_URL = 'https://tvwnsiftckyoukzxxcsn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qYpuQwjoqhamY00cdp5UDQ_sg_OFF7_';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── STATE ──
+let studentName = '', grade = '', recordId = null;
+let days = new Array(21).fill(false);
+let dayMoods = new Array(21).fill(null);
+let plan = { move: '', dur: '', why: '' };
+let currentDayForMood = null;
+let selectedMood = null;
+let saveTimeout = null;
+
+// ── LOGIN ──
+async function startSession() {
+  const name = document.getElementById('input-name').value.trim();
+  const gr = document.getElementById('input-grade').value.trim();
+  if (!name || !gr) { document.getElementById('login-error').classList.add('show'); return; }
+  studentName = name; grade = gr;
+  document.getElementById('login-error').classList.remove('show');
+
+  const { data } = await sb.from('student_progress')
+    .select('*').eq('student_name', name).eq('class_code', gr).maybeSingle();
+
+  if (data) {
+    recordId = data.id;
+    if (data.tracker_days) days = JSON.parse(data.tracker_days);
+    if (data.day_moods) dayMoods = JSON.parse(data.day_moods);
+    if (data.plan) plan = JSON.parse(data.plan);
+  } else {
+    const { data: newRow } = await sb.from('student_progress').insert({
+      student_name: name, class_code: gr,
+      tracker_days: JSON.stringify(days),
+      day_moods: JSON.stringify(dayMoods),
+      plan: JSON.stringify(plan),
+      likert_before: JSON.stringify([]),
+      likert_after: JSON.stringify([]),
+      quiz_score: 0,
+      updated_at: new Date().toISOString()
+    }).select().single();
+    if (newRow) recordId = newRow.id;
+  }
+
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  buildUI();
+}
+
+// ── BUILD UI ──
+function buildUI() {
+  // Greeting
+  const hour = new Date().getHours();
+  const time = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').textContent = `${time}, ${studentName}!`;
+
+  // Badge
+  if (plan.move && plan.dur) {
+    document.getElementById('badge-text').textContent = `${plan.move} · Every day · ${plan.dur}`;
+  }
+
+  buildTracker();
+  updateStats();
+
+  // Show complete banner if done
+  const done = days.filter(Boolean).length;
+  if (done >= 21) document.getElementById('complete-banner').style.display = 'block';
+}
+
+function buildTracker() {
+  ['week1','week2','week3'].forEach((id, wi) => {
+    const el = document.getElementById(id);
+    const start = wi * 7;
+    el.innerHTML = Array.from({length:7}, (_, i) => {
+      const d = start + i;
+      const mood = dayMoods[d] ? `<div class="day-mood">${dayMoods[d].emoji}</div>` : '';
+      return `<div class="day-cell ${days[d] ? 'checked' : ''}" onclick="toggleDay(${d})" id="day-${d}">
+        <span class="dn">${d+1}</span><span class="dl">DAY</span>${mood}
+      </div>`;
+    }).join('');
+  });
+}
+
+function updateStats() {
+  const done = days.filter(Boolean).length;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-left').textContent = Math.max(0, 21 - done);
+  document.getElementById('streak-fill').style.width = (done/21*100) + '%';
+
+  // Calculate current streak
+  let streak = 0;
+  for (let i = 20; i >= 0; i--) {
+    if (days[i]) streak++;
+    else break;
+  }
+  document.getElementById('stat-streak').textContent = streak;
+}
+
+// ── TOGGLE DAY ──
+function toggleDay(i) {
+  days[i] = !days[i];
+  const cell = document.getElementById('day-' + i);
+  cell.classList.toggle('checked', days[i]);
+
+  if (days[i]) {
+    // Show mood modal
+    currentDayForMood = i;
+    selectedMood = null;
+    document.querySelectorAll('.mood-opt').forEach(o => o.classList.remove('selected'));
+    document.getElementById('mood-overlay').classList.add('open');
+
+    // Milestone check
+    const done = days.filter(Boolean).length;
+    if ([7, 14, 21].includes(done)) {
+      const msgs = { 7: ['🎉 Day 7 complete!', 'One week in — your brain is starting to notice.'],
+                     14: ['🔥 Day 14 — halfway!', 'The habit is forming. Keep going.'],
+                     21: ['🏆 Day 21 — you did it!', '21 days. Your habit is real now.'] };
+      const [msg, sub] = msgs[done];
+      showToast(msg, sub);
+      launchConfetti();
+      if (done === 21) document.getElementById('complete-banner').style.display = 'block';
+    }
+  } else {
+    // Remove mood if unticking
+    dayMoods[i] = null;
+    const moodEl = cell.querySelector('.day-mood');
+    if (moodEl) moodEl.remove();
+  }
+
+  updateStats();
+  saveProgress();
+}
+
+// ── MOOD ──
+function selectMood(emoji, label) {
+  selectedMood = { emoji, label };
+  document.querySelectorAll('.mood-opt').forEach(o => {
+    o.classList.toggle('selected', o.querySelector('.mo-label').textContent === label);
+  });
+}
+
+function saveMood() {
+  if (currentDayForMood !== null && selectedMood) {
+    dayMoods[currentDayForMood] = selectedMood;
+    // Update cell display
+    const cell = document.getElementById('day-' + currentDayForMood);
+    let moodEl = cell.querySelector('.day-mood');
+    if (!moodEl) { moodEl = document.createElement('div'); moodEl.className = 'day-mood'; cell.appendChild(moodEl); }
+    moodEl.textContent = selectedMood.emoji;
+  }
+  document.getElementById('mood-overlay').classList.remove('open');
+  currentDayForMood = null;
+  saveProgress();
+}
+
+// ── SAVE ──
+async function saveProgress() {
+  if (!recordId) return;
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    await sb.from('student_progress').update({
+      tracker_days: JSON.stringify(days),
+      day_moods: JSON.stringify(dayMoods),
+      updated_at: new Date().toISOString()
+    }).eq('id', recordId);
+    const el = document.getElementById('save-indicator');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2000);
+  }, 600);
+}
+
+// ── TOAST ──
+function showToast(msg, sub) {
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-sub').textContent = sub;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// ── CONFETTI ──
+function launchConfetti() {
+  const wrap = document.getElementById('confetti-wrap');
+  const colours = ['#e63946','#ff6b6b','#111','#ffd60a','#06d6a0'];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = `left:${Math.random()*100}%;background:${colours[Math.floor(Math.random()*colours.length)]};
+      animation-duration:${1.2+Math.random()*1.5}s;animation-delay:${Math.random()*0.6}s;
+      border-radius:${Math.random()>0.5?'50%':'2px'};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px`;
+    wrap.appendChild(p);
+    setTimeout(() => p.remove(), 3000);
+  }
+}
+
+// ── FLOATING CREW ON LOGIN ──
+function startFloats() {
+  const wrap = document.getElementById('login-floats');
+  const emojis = ['🏃','🎯','☀️','⏰','🌙','💪','🔥','⚡'];
+  emojis.forEach((em, i) => {
+    const el = document.createElement('div');
+    el.className = 'float-emoji';
+    el.textContent = em;
+    el.style.cssText = `left:${8+i*11}%;bottom:-20px;animation-duration:${4+Math.random()*3}s;animation-delay:${Math.random()*3}s`;
+    wrap.appendChild(el);
+  });
+}
+startFloats();
+
+// ── EXPORT JPG ──
+async function exportJPG() {
+  const btn = document.getElementById('export-btn');
+  btn.textContent = '⏳ Generating...';
+  btn.disabled = true;
+
+  // Capture just the app content
+  const target = document.getElementById('app');
+  const canvas = await html2canvas(target, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    useCORS: true,
+    ignoreElements: el => el.classList.contains('print-bar') || el.classList.contains('complete-banner') && el.style.display === 'none'
+  });
+
+  const link = document.createElement('a');
+  link.download = `21-day-tracker-${studentName.toLowerCase().replace(/\s+/g,'-')}.jpg`;
+  link.href = canvas.toDataURL('image/jpeg', 0.92);
+  link.click();
+
+  btn.textContent = '📸 Export as JPG';
+  btn.disabled = false;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) startSession();
+});
+</script>
+</body>
+</html>
